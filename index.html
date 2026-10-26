@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Laboratorio de localización</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Siempre en claro, aunque el navegador esté en modo oscuro */
+:root{
+  color-scheme:light only;
+  --bg:#F5F7FC; --surface:#FFFFFF; --ink:#1E2433; --muted:#5B6478; --line:#DCE1EC; --soft:#EEF2FB;
+  --accent:#3F5FE0; --accent-ink:#FFFFFF; --accent-soft:#E6ECFF;
+  --mark:#FFE98A; --mark-ink:#1E2433;
+  --bad:#B4372B; --bad-bg:#FDEDEA; --ok:#1F7A4D; --ok-bg:#E6F6EC; --warn:#8A5A00; --warn-bg:#FFF6DD;
+  --code-bg:#F1F4FB; --code-ink:#1E2433;
+  --ux:#C2410C; --ux-soft:#FFEDE3;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Verdana",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"Consolas",monospace;
+  --r:12px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.1rem/1.55 var(--f-body);padding:0 16px 4rem}
+.wrap{max-width:62rem;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:clamp(1.7rem,4.2vw,2.6rem);font-weight:800}
+h2{font-size:1.5rem;font-weight:700}
+h3{font-size:1.18rem;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+.lead{color:var(--muted);max-width:46rem}
+.eyebrow{font:600 .76rem/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)} .small{font-size:.95rem}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* Cabecera */
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);padding:.9rem 0 .6rem;border-bottom:1px solid var(--line);display:grid;gap:.6rem}
+.toprow{display:flex;justify-content:space-between;align-items:end;gap:1rem;flex-wrap:wrap}
+.topright{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.score{font:700 .95rem var(--f-mono);background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:.35rem .9rem;font-variant-numeric:tabular-nums}
+.groups{display:flex;gap:.5rem;flex-wrap:wrap}
+.group{font:800 1rem var(--f-display);padding:.55rem 1rem;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.group[aria-pressed="true"][data-g="loc"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.group[aria-pressed="true"][data-g="ux"]{background:var(--ux);border-color:var(--ux);color:#fff}
+.group[aria-pressed="true"][data-g="end"]{background:var(--ink);border-color:var(--ink);color:#fff}
+nav.tabs{display:flex;gap:.4rem;overflow-x:auto;padding-bottom:.2rem;scrollbar-width:thin}
+.tab{flex:none;font:700 .92rem var(--f-display);padding:.4rem .8rem;border-radius:999px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:flex;gap:.4rem;align-items:center}
+.tab[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+body.ux .tab[aria-selected="true"]{background:var(--ux-soft);border-color:var(--ux)}
+.tab .dot{width:.55rem;height:.55rem;border-radius:50%;background:var(--line)}
+.tab.done .dot{background:var(--ok)}
+
+section.panel{display:grid;gap:1.3rem;padding-top:1.4rem}
+.intro{display:grid;gap:.5rem}
+.layer{font:600 .78rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+body.ux .layer{color:var(--ux)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:1.3rem;display:grid;gap:1rem}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.2rem}
+@media (max-width:760px){.two{grid-template-columns:1fr}}
+.explain{background:var(--soft);border-radius:10px;padding:1rem 1.1rem;display:grid;gap:.5rem}
+.explain ul{margin:0;padding-left:1.2rem;display:grid;gap:.25rem}
+
+button.btn{font:700 1rem var(--f-body);padding:.55rem 1.05rem;border-radius:8px;border:2px solid var(--accent);background:var(--surface);color:var(--accent);cursor:pointer}
+button.btn.solid{background:var(--accent);color:var(--accent-ink)}
+body.ux button.btn{border-color:var(--ux);color:var(--ux)}
+body.ux button.btn.solid{background:var(--ux);color:#fff}
+button.btn:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+input[type=text],textarea,select{width:100%;font:400 1.05rem/1.45 var(--f-body);color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:8px;padding:.55rem .75rem}
+textarea{resize:vertical}
+.lbl{font-weight:700;display:block;margin-bottom:.35rem}
+
+.opts{display:flex;flex-wrap:wrap;gap:.45rem}
+.opts.col{flex-direction:column;align-items:stretch}
+.opt{font:400 1rem var(--f-body);border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:.45rem .8rem;cursor:pointer;font-variant-numeric:tabular-nums;text-align:left}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
+.opt.right{border-color:var(--ok);background:var(--ok-bg)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.opt.missed{border-color:var(--ok);border-style:dashed}
+.opt:disabled{opacity:.45;cursor:not-allowed}
+
+.fb{border-radius:8px;padding:.7rem .9rem;font-size:1rem}
+.fb.ok{background:var(--ok-bg);border-left:4px solid var(--ok)}
+.fb.bad{background:var(--bad-bg);border-left:4px solid var(--bad)}
+.fb.warn{background:var(--warn-bg);border-left:4px solid var(--warn)}
+.fb.info{background:var(--soft);border-left:4px solid var(--accent)}
+.result{font:700 1.05rem var(--f-display)}
+.badge{display:inline-block;font:600 .75rem var(--f-mono);letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:.1rem .5rem;margin-left:.3rem;vertical-align:middle}
+.badge.same{background:var(--accent-soft);color:var(--accent)}
+.badge.diff{background:var(--warn-bg);color:var(--warn)}
+.q{display:grid;gap:.5rem;padding:.9rem 0;border-top:1px dashed var(--line)}
+.q:first-child{border-top:0;padding-top:0}
+.ctx{font-size:.95rem;color:var(--muted)}
+.ctx b{color:var(--ink)}
+
+/* 1 Formatos */
+.event{background:var(--soft);border-radius:10px;padding:1rem;display:grid;gap:.55rem;align-content:start}
+.event .brand{font:800 1.1rem var(--f-display)}
+.event .row{display:flex;justify-content:space-between;gap:.6rem;flex-wrap:wrap;font-size:1rem}
+.event .row span:last-child{font-weight:700;font-variant-numeric:tabular-nums}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font:400 .85rem var(--f-mono);text-align:center}
+.cal .h{color:var(--muted);font-weight:600;padding:.2rem 0}
+.cal .d{padding:.3rem 0;border-radius:4px;background:var(--surface)}
+.cal .d.x{background:var(--accent);color:#fff;font-weight:700}
+.cal .d.e{background:transparent}
+.calcap{font-weight:700;font-size:.95rem}
+pre.intl{background:var(--code-bg);color:var(--code-ink);border:1px solid var(--line);font:400 .88rem/1.55 var(--f-mono);padding:.8rem 1rem;border-radius:8px;overflow-x:auto;margin:0;white-space:pre-wrap}
+
+/* 2 Formularios */
+.person{display:flex;gap:.7rem;align-items:baseline;flex-wrap:wrap}
+.person .nm{font:800 1.25rem var(--f-display)}
+.person .fr{font:600 .8rem var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.forms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7rem}
+@media (max-width:760px){.forms{grid-template-columns:1fr}}
+.fmock{border:2px solid var(--line);border-radius:10px;padding:.7rem;background:var(--bg);cursor:pointer;display:grid;gap:.4rem;text-align:left;font:inherit;color:inherit}
+.fmock[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.fmock.right{border-color:var(--ok);background:var(--ok-bg)}
+.fmock.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.fmock .ttl{font:700 .8rem var(--f-mono);color:var(--muted)}
+.fmock .fld{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:.25rem .5rem;font-size:.9rem;color:var(--muted)}
+.fmock .rowf{display:grid;grid-template-columns:1fr 1fr;gap:.35rem}
+
+/* 4 Imágenes */
+.case{display:grid;gap:.6rem;padding:1rem;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.case .mk{font:600 .78rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.case .desc{display:flex;gap:.8rem;align-items:flex-start}
+.case .ico{font-size:2rem;line-height:1;flex:none;width:2.6rem;text-align:center}
+.cases{display:grid;gap:.8rem}
+.case img{display:block;max-width:100%;max-height:20rem;object-fit:contain;border-radius:6px;background:#fff;border:1px solid var(--line)}
+.resimg{margin-top:.5rem}
+.src{font-size:.88rem}
+
+/* 5 Japón */
+.poster{border-radius:12px;padding:1.3rem 1.1rem;display:grid;gap:.45rem;min-height:16rem;align-content:center;text-align:center;border:1px solid var(--line);transition:background .2s,color .2s}
+.poster .jp{font-size:1.05rem}
+.poster .big{font:800 clamp(1.5rem,4vw,2.1rem)/1.1 var(--f-display)}
+.poster .line{font-size:1rem}
+.field{display:grid;gap:.35rem}
+
+/* 6 Hofstede */
+.dims{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem}
+@media (max-width:760px){.dims{grid-template-columns:1fr}}
+.dim{background:var(--soft);border-radius:10px;padding:.8rem;display:grid;gap:.3rem;align-content:start}
+.dim b{font-family:var(--f-display)}
+.dim span{font-size:.92rem}
+.profiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+@media (max-width:760px){.profiles{grid-template-columns:1fr}}
+.prof{background:var(--bg);border-radius:10px;padding:.8rem;display:grid;gap:.45rem}
+.bar{display:grid;grid-template-columns:7.5rem 1fr 2rem;gap:.5rem;align-items:center;font-size:.85rem}
+.bar .track{background:var(--surface);border-radius:4px;height:.8rem;overflow:hidden;border:1px solid var(--line)}
+.bar .fill{background:var(--accent);height:100%}
+.bar .v{font:600 .85rem var(--f-mono);text-align:right}
+.gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+@media (max-width:640px){.gallery{grid-template-columns:1fr}}
+.shot{background:var(--bg);border-radius:10px;padding:.7rem;display:grid;gap:.5rem;align-content:start}
+.shot img{width:100%;border-radius:6px;display:block;background:var(--line);min-height:6rem}
+.shot .tagl{font:700 1rem var(--f-mono)}
+.imgerr{font-size:.9rem;color:var(--muted);padding:1rem;border:2px dashed var(--line);border-radius:6px}
+
+/* 7 IKEA */
+.heads{display:grid;gap:.5rem}
+.head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;align-items:center;background:var(--bg);border-radius:8px;padding:.55rem .7rem;border:2px solid transparent}
+.head.right{border-color:var(--ok)}
+.head.wrong{border-color:var(--bad)}
+.seg{display:flex;gap:.3rem}
+.seg button{font:700 .85rem var(--f-body);border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:.3rem .55rem;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* 8 Código */
+.reto{display:grid;gap:.7rem;padding:1rem 0;border-top:1px dashed var(--line)}
+.reto:first-of-type{border-top:0;padding-top:0}
+textarea.code{background:var(--code-bg);color:var(--code-ink);font:400 .95rem/1.55 var(--f-mono);tab-size:2;white-space:pre;overflow-x:auto}
+.out{font:400 .95rem/1.5 var(--f-mono);background:var(--soft);border-radius:8px;padding:.6rem .8rem;white-space:pre-wrap;overflow-wrap:anywhere;min-height:2.4rem}
+code{font-family:var(--f-mono);font-size:.92em;background:var(--accent-soft);border-radius:4px;padding:0 .25em}
+
+/* Inicio */
+.iceberg{display:grid;gap:.4rem}
+.lvl{border-radius:10px;padding:.7rem 1rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center;cursor:pointer;border:0;text-align:left;font:inherit;color:var(--ink)}
+.lvl b{font-family:var(--f-display);font-size:1.08rem}
+.lvl span{font-size:.93rem}
+.l1{background:#EAF0FF}.l2{background:#DCE5FF}.l3{background:#CBD8FF}.l4{background:#BCCCFA}.l5{background:var(--ux-soft)}
+
+/* UX writing (taller) */
+.card-head{display:flex;gap:.8rem;align-items:baseline;flex-wrap:wrap}
+.num{font:700 1rem var(--f-mono);color:var(--ux)}
+.where{font:400 .93rem var(--f-mono);color:var(--muted)}
+.mock{border-radius:8px;overflow:hidden;border:1px solid var(--line);font-size:1rem}
+.mock-scroll{overflow-x:auto}
+.xampp{background:#EEF0F3;color:#1E2328;font:400 .93rem/1.5 var(--f-mono);padding:.8rem 1rem}
+.xampp .bar2{font-family:var(--f-body);font-weight:700;margin-bottom:.4rem}
+.xampp .t{color:var(--muted)} .xampp .e{color:#C0281C} .xampp .i{color:#1F4FB5}
+.wpnotice{background:var(--surface);border-left:4px solid #D63638;padding:.9rem 1rem;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.wpbar{background:#E9EBEE;color:#1E2328;font:600 .9rem var(--f-body);padding:.4rem .8rem}
+.php{background:#fff;color:#000;font:400 1rem/1.5 "Times New Roman",Times,serif;padding:1rem}
+.dialog{background:var(--surface);padding:1.1rem;display:grid;gap:.9rem;max-width:26rem;margin:1rem auto;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.btnrow{display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap}
+.fakebtn{border:1px solid var(--line);border-radius:6px;padding:.35rem .9rem;background:var(--bg);font-size:1rem}
+.fakebtn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.form{padding:1.1rem;display:grid;gap:.6rem;background:var(--surface)}
+.fakeinput{border:1px solid var(--line);border-radius:6px;padding:.5rem .7rem;color:var(--muted);font-size:.95rem}
+.form input.edit{width:100%;border:2px dashed var(--ux);border-radius:6px;padding:.5rem .7rem;background:var(--surface);font:400 1rem var(--f-body);color:var(--ink)}
+.form input.editbtn{width:auto;min-width:9rem;border:2px dashed #fff;outline:2px solid var(--accent);background:var(--accent);color:#fff;font-weight:700;border-radius:6px;padding:.4rem .9rem}
+.form input.editbtn::placeholder{color:#E6ECFF}
+.mockwrap{background:var(--bg);padding:.6rem}
+.meta{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;font:400 .88rem var(--f-mono);color:var(--muted);margin-top:.3rem;font-variant-numeric:tabular-nums}
+.over{color:var(--bad);font-weight:600}
+.answer{border-top:2px dashed var(--line);padding-top:1rem;display:grid;gap:.6rem}
+.answer .prop{font-size:1.15rem;background:var(--ux-soft);border-radius:8px;padding:.8rem 1rem}
+.answer ul{margin:0;padding-left:1.2rem;display:grid;gap:.25rem}
+.tag{font:600 .78rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ok)}
+.rules{display:flex;flex-wrap:wrap;gap:.5rem}
+.rule{background:var(--ux-soft);border-radius:999px;padding:.25rem .8rem;font-size:.98rem}
+.shopbar{font:400 .88rem var(--f-mono);color:var(--muted);background:var(--soft);border-radius:8px 8px 0 0;padding:.4rem .8rem;margin-bottom:-1rem}
+.original{background:var(--bg);border-radius:8px;padding:1rem;font-size:1.05rem}
+.original.banner{background:var(--mark);color:var(--mark-ink);border-radius:0 0 8px 8px}
+.hl{background:var(--mark);color:var(--mark-ink);border-radius:3px;padding:0 .1em}
+.original.banner .hl{background:var(--surface)}
+.preview{background:var(--bg);border-radius:8px;padding:1rem;min-height:4rem;font-size:1.05rem}
+.checks{display:grid;gap:.4rem;margin:0;padding:0;list-style:none}
+.checks label{display:flex;gap:.6rem;align-items:flex-start;cursor:pointer}
+.checks input{width:1.2rem;height:1.2rem;margin-top:.25rem;accent-color:var(--ux);flex:none}
+.story{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem}
+@media (max-width:760px){.story{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.beat{background:var(--ux-soft);border-radius:8px;padding:.8rem;display:grid;gap:.2rem;align-content:start}
+.beat .k{font:600 .78rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ux)}
+.phone{width:min(100%,20rem);margin:0 auto;border:3px solid var(--ink);border-radius:26px;padding:1.2rem .9rem 1.4rem;display:grid;gap:.8rem;background:var(--surface)}
+.phone .shop{font:700 1rem var(--f-display)}
+.phone .pline{display:flex;justify-content:space-between;font-size:.95rem;color:var(--muted)}
+.phone .pay{background:var(--accent);color:#fff;border-radius:10px;padding:.7rem;text-align:center;font-weight:700;overflow-wrap:anywhere}
+.phone .msg{border-radius:8px;padding:.6rem .7rem;font-size:.95rem;overflow-wrap:anywhere}
+.phone .okmsg{border:2px solid var(--ok)} .phone .errmsg{border:2px solid var(--bad)}
+.empty{color:var(--muted);font-style:italic}
+.fields{display:grid;gap:1rem}
+
+.summary{display:grid;gap:.3rem}
+.sumrow{display:flex;justify-content:space-between;gap:1rem;border-bottom:1px dashed var(--line);padding:.35rem 0;font-variant-numeric:tabular-nums}
+footer{margin-top:2.4rem;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="toprow">
+    <div>
+      <div class="eyebrow">Aspectos culturales y UX writing · Universidad de Salamanca</div>
+      <h1>Laboratorio de localización</h1>
+    </div>
+    <div class="topright"><div class="score" id="score" aria-live="polite">0 puntos</div></div>
+  </div>
+  <div class="groups" role="group" aria-label="Secciones">
+    <button class="group" data-g="loc">Aspectos culturales</button>
+    <button class="group" data-g="ux">UX writing y microcopy</button>
+    <button class="group" data-g="end">Entrega</button>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Ejercicios"></nav>
+</header>
+
+<!-- ======================= INICIO ======================= -->
+<section class="panel" id="p0" data-g="loc" data-tab="Inicio" role="tabpanel">
+  <div class="intro">
+    <h2>Antes de empezar</h2>
+    <p class="lead">Vamos a hacer unos ejercicios basados en la presentación de clase sobre aspectos culturales en localización y UX writing. En cada uno, primero decides; después la página te corrige y te explica por qué.</p>
+  </div>
+  <div class="card">
+    <div><label class="lbl" for="nombre">Nombre y apellidos</label><input type="text" id="nombre" autocomplete="name"></div>
+    <p class="small muted">Tu nombre aparecerá en la hoja de respuestas que descargues al final. Tus respuestas se guardan solas en este navegador. En «Entrega» puedes descargarlas.</p>
+  </div>
+  <div class="card">
+    <h3>El mapa: el iceberg de la cultura</h3>
+    <p class="muted small">De lo que se ve a simple vista a lo que casi nadie nota. Toca un nivel para ir a sus ejercicios.</p>
+    <div class="iceberg">
+      <button class="lvl l1" data-go="p1"><b>Superficie · Percepción</b><span>1 Formatos · 2 Nombres y formularios · 3 Variedad y registro</span></button>
+      <button class="lvl l2" data-go="p4"><b>Debajo del agua · Simbolismo</b><span>4 Imágenes y gestos · 5 Japón</span></button>
+      <button class="lvl l3" data-go="p6"><b>En el fondo · Valores</b><span>6 Hofstede · 7 Contexto alto y bajo</span></button>
+      <button class="lvl l4" data-go="p8"><b>Manos a la obra</b><span>8 Localiza con código</span></button>
+      <button class="lvl l5" data-go="u1"><b>Y después · UX writing</b><span>Taller de microcopy (pestaña aparte)</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 1 FORMATOS ======================= -->
+<section class="panel" id="p1" data-g="loc" data-tab="1 · Formatos" role="tabpanel" hidden>
+  <div class="intro">
+    <span class="layer">Percepción · Divisiones de la realidad</span>
+    <h2>Localiza la ficha del evento</h2>
+    <p class="lead">Global Events Inc., una empresa estadounidense, va a organizar un evento y tiene que adaptar su ficha a cada mercado. Esta es la ficha original de EE. UU. Elige un país y selecciona el formato adecuado para cada dato en ese mercado; la vista previa cambia con tus decisiones. Haz España y al menos otro país (o pulsa «Aleatorio»). Al corregir verás también si cada formato coincide con el de España.</p>
+    <p class="fb info"><b>Puedes marcar más de una opción.</b> En algunos países conviven dos formatos igual de correctos: en ese caso, marca los dos. Para quitar una opción, vuelve a pulsarla.</p>
+  </div>
+  <div class="card">
+    <div class="actions" style="justify-content:space-between">
+      <div class="opts" id="locales"></div>
+      <button class="btn" id="aleatorio">Aleatorio</button>
+    </div>
+    <div class="two">
+      <div id="items"></div>
+      <div style="display:grid;gap:.8rem;align-content:start">
+        <div class="event" aria-live="polite">
+          <div class="brand">Global Events Inc.</div>
+          <div class="row"><span>Próximo evento</span><span id="pvFecha"></span></div>
+          <div class="row"><span>Hora</span><span id="pvHora"></span></div>
+          <div class="row"><span>Recaudación solidaria</span><span id="pvNum"></span></div>
+          <div class="row"><span>Temperatura prevista</span><span id="pvTemp"></span></div>
+          <div class="row"><span>Teléfono de información</span><span id="pvTel"></span></div>
+          <div class="calcap" id="pvCalCap"></div>
+          <div class="cal" id="pvCal"></div>
+        </div>
+        <p class="small muted" id="pvNote"></p>
+      </div>
+    </div>
+    <div class="actions"><button class="btn solid" id="check1">Comprobar</button><button class="btn" id="intl1">Pregúntale a tu navegador</button><span class="result" id="res1"></span></div>
+    <div id="fb1" style="display:grid;gap:.5rem"></div>
+    <pre class="intl" id="intlOut" hidden></pre>
+  </div>
+  <div class="card">
+    <div class="explain small"><b>Y hay más formatos que cambian de un país a otro:</b>
+      <ul><li><b>Divisa:</b> 44,90 € en España, €44.90 en Irlanda. Y cambiar de idioma no cambia la moneda.</li><li><b>Direcciones:</b> orden de los datos, código postal delante o detrás, provincia, prefectura o estado.</li><li><b>Calendarios:</b> en Japón, 2025 es también el año 7 de la era Reiwa (lo verás en el ejercicio 8).</li><li><b>Ortotipografía:</b> meses en minúscula en español (<i>octubre</i>), comillas «» en España, “” en inglés, „“ en alemán y 「」 en japonés, y el espacio de «75 %».</li></ul></div>
+    <label class="lbl" for="r1">Reflexiona: Reino Unido y EE. UU. hablan inglés; España y México, español. ¿Basta con elegir el idioma para localizar? ¿Qué tendría que configurar el equipo de desarrollo?</label>
+    <textarea id="r1" data-refl="r1" rows="3"></textarea>
+  </div>
+</section>
+
+<!-- ======================= 2 NOMBRES ======================= -->
+<section class="panel" id="p2" data-g="loc" data-tab="2 · Nombres" role="tabpanel" hidden>
+  <div class="intro">
+    <span class="layer">Percepción · Convenciones socioculturales</span>
+    <h2>Nombres y formularios</h2>
+    <p class="lead">El formulario de inscripción de Global Events es estadounidense: <b>First name</b> y <b>Last name</b>. Cuatro personas de cuatro países quieren apuntarse. Ayúdalas a rellenarlo y descubre dónde falla.</p>
+  </div>
+  <div class="card">
+    <div class="mock" style="max-width:24rem"><div class="form"><b>Register for the event</b><div class="fmock" style="cursor:default"><div class="rowf"><div class="fld">First name</div><div class="fld">Last name</div></div></div></div></div>
+    <div id="people"></div>
+  </div>
+  <div class="card">
+    <h3>Ahora, diseña el formulario</h3>
+    <p class="muted small">Elige el mejor formulario para la versión española y para la japonesa.</p>
+    <div><span class="lbl">Para España</span><div class="forms" id="formsES"></div></div>
+    <div><span class="lbl">Para Japón</span><div class="forms" id="formsJP"></div></div>
+    <div class="actions"><button class="btn solid" id="check2">Comprobar</button><span class="result" id="res2"></span></div>
+    <div id="fb2" style="display:grid;gap:.5rem"></div>
+  </div>
+  <div class="card">
+    <label class="lbl" for="r2">Reflexiona: ¿y si un mismo formulario tiene que servir para personas de todo el mundo? ¿Qué campos pondrías?</label>
+    <textarea id="r2" data-refl="r2" rows="3"></textarea>
+  </div>
+</section>
+
+<!-- ======================= 3 TRATAMIENTO ======================= -->
+<section class="panel" id="p3" data-g="loc" data-tab="3 · Variedad y registro" role="tabpanel" hidden>
+  <div class="intro">
+    <span class="layer">Percepción · Texto y lenguaje</span>
+    <h2>Variedad y registro: ¿tú, usted, vos, vosotros o ustedes?</h2>
+    <p class="lead">El español cambia según el país (la variedad) y según la relación con el usuario (el registro, más o menos formal). Decidir cómo tratar al usuario es decidir para quién es la web y qué relación quiere tener con él. Elige el texto adecuado en cada encargo.</p>
+  </div>
+  <div class="card" id="trato"></div>
+  <div class="card">
+    <div class="actions"><button class="btn solid" id="check3">Comprobar</button><span class="result" id="res3"></span></div>
+    <div id="fb3"></div>
+  </div>
+</section>
+
+<!-- ======================= 4 IMÁGENES ======================= -->
+<section class="panel" id="p4" data-g="loc" data-tab="4 · Imágenes y gestos" role="tabpanel" hidden>
+  <div class="intro">
+    <span class="layer">Simbolismo · Adaptaciones gráficas</span>
+    <h2>¿Lo dejarías igual?</h2>
+    <p class="lead">Todos son casos reales. Eres responsable de localización: lee qué muestra la imagen y en qué mercado se va a publicar, y decide. Después descubre qué hizo la empresa y qué pasó.</p>
+  </div>
+  <div class="card">
+    <div class="cases" id="cases"></div>
+    <div class="actions"><button class="btn solid" id="check4">Ver qué pasó de verdad</button><span class="result" id="res4"></span></div>
+  </div>
+  <div class="card">
+    <label class="lbl" for="r4">Reflexiona: compara IKEA y Starbucks en Arabia Saudí. Las dos adaptaron sus imágenes, pero a una se la criticó mucho más. ¿Dónde está el límite entre adaptar y renunciar a tus valores?</label>
+    <textarea id="r4" data-refl="r4" rows="4"></textarea>
+  </div>
+</section>
+
+<!-- ======================= 5 JAPÓN ======================= -->
+<section class="panel" id="p5" data-g="loc" data-tab="5 · Japón" role="tabpanel" hidden>
+  <div class="intro">
+    <span class="layer">Simbolismo · Colores, números y objetos</span>
+    <h2>Campaña para turistas de Japón</h2>
+    <p class="lead">La oficina de turismo de Castilla y León prepara una oferta de hotel para viajeros japoneses. Decide los colores, la duración, la habitación, el regalo de bienvenida y cómo se dice la planta del desayuno. El cartel cambia mientras decides.</p>
+  </div>
+  <div class="card">
+    <div class="two">
+      <div style="display:grid;gap:1rem;align-content:start" id="jpFields"></div>
+      <div class="poster" id="poster" aria-live="polite">
+        <div class="jp" lang="ja">ようこそカスティーリャ・イ・レオンへ</div>
+        <div class="big">Castilla y León te espera</div>
+        <div class="line" id="psNoches"></div>
+        <div class="line" id="psHab"></div>
+        <div class="line" id="psDes"></div>
+        <div class="line" id="psReg"></div>
+      </div>
+    </div>
+    <div class="actions"><button class="btn solid" id="check5">Evaluar la campaña</button><span class="result" id="res5"></span></div>
+    <div id="fb5" style="display:grid;gap:.5rem"></div>
+  </div>
+  <div class="card">
+    <label class="lbl" for="r5">Reflexiona: ¿hay supersticiones parecidas en España? (el martes y 13, hoteles sin habitación 13…). ¿Las tendrías en cuenta al revés, localizando una web japonesa para España?</label>
+    <textarea id="r5" data-refl="r5" rows="3"></textarea>
+  </div>
+</section>
+
+<!-- ======================= 6 HOFSTEDE ======================= -->
+<section class="panel" id="p6" data-g="loc" data-tab="6 · Hofstede" role="tabpanel" hidden>
+  <div class="intro">
+    <span class="layer">Valores · Dimensiones culturales</span>
+    <h2>Las dimensiones de Hofstede</h2>
+    <p class="lead">Geert Hofstede comparó los valores de trabajadores de muchos países y los resumió en seis dimensiones, puntuadas de 0 a 100. Son <b>medias nacionales</b>: no describen a cada persona, pero ayudan a prever qué espera un público de una web.</p>
+  </div>
+  <div class="card">
+    <div class="dims">
+      <div class="dim"><b>Distancia al poder</b><span>Cuánto se acepta que el poder esté repartido de forma desigual.</span><span class="muted">En una web: fotos y mensajes de los directivos, títulos, jerarquías.</span></div>
+      <div class="dim"><b>Individualismo</b><span>«Yo» frente a «nosotros»: cuánto importa la persona frente al grupo.</span><span class="muted">En una web: personalización, privacidad, libertad de elección. Lo contrario (colectivismo): comunidad, clubes, fidelidad.</span></div>
+      <div class="dim"><b>Masculinidad</b><span>Cuánto se valoran la competición, el logro y el éxito frente al cuidado y la calidad de vida.</span><span class="muted">En una web: premios, rankings, eficacia del producto.</span></div>
+      <div class="dim"><b>Aversión a la incertidumbre</b><span>Cuánto incomoda lo desconocido o ambiguo, y cuántas reglas y garantías se necesitan.</span><span class="muted">En una web: preguntas frecuentes, atención al cliente, sellos de calidad, pruebas gratuitas.</span></div>
+      <div class="dim"><b>Orientación a largo plazo</b><span>Pensar en el futuro, el ahorro y la constancia frente a la tradición y el presente.</span><span class="muted">En una web: garantías largas, historia de la empresa, inversión.</span></div>
+      <div class="dim"><b>Indulgencia</b><span>Cuánta libertad se da a disfrutar de la vida frente a la contención y las normas sociales.</span><span class="muted">En una web: ocio, placer, ofertas «date un capricho».</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>A · ¿De qué país es cada perfil?</h3>
+    <p class="muted small">Son las puntuaciones de Brasil, China, Alemania y EE. UU. (las de la diapositiva). Fíjate en los valores más extremos.</p>
+    <div class="profiles" id="profiles"></div>
+  </div>
+  <div class="card">
+    <h3>B · ¿Qué dimensión se nota en cada web?</h3>
+    <div id="feats"></div>
+  </div>
+  <div class="card">
+    <div class="actions"><button class="btn solid" id="check6">Comprobar</button><span class="result" id="res6"></span></div>
+    <div id="fb6" style="display:grid;gap:.5rem"></div>
+  </div>
+</section>
+
+<!-- ======================= 7 CONTEXTO ======================= -->
+<section class="panel" id="p7" data-g="loc" data-tab="7 · Contexto" role="tabpanel" hidden>
+  <div class="intro">
+    <span class="layer">Valores · Culturas de alto y bajo contexto (Hall)</span>
+    <h2>¿IKEA España o IKEA Alemania?</h2>
+    <p class="lead">Son titulares reales de la sección de novedades de IKEA en España y en Alemania (febrero de 2020, captura de la diapositiva). Los alemanes están traducidos al español para que el idioma no te dé la pista. ¿De qué web es cada uno?</p>
+  </div>
+  <div class="card">
+    <div class="heads" id="heads"></div>
+    <div class="actions"><button class="btn solid" id="check7">Comprobar</button><span class="result" id="res7"></span></div>
+    <div id="fb7" style="display:grid;gap:.5rem"></div>
+  </div>
+  <div class="card">
+    <h3>Transcreación: cambia el titular de cultura</h3>
+    <p class="muted">Transcrear es reescribir un texto para que cause en otro público el mismo efecto que el original, aunque cambien las palabras. Escribe en español en los dos casos.</p>
+    <div class="two">
+      <div><label class="lbl" for="r7a">«Colección FREKVENS» (altavoces y luces para fiestas en casa) es un titular alemán: solo dice qué es. Reescríbelo para la web española, que vende sensaciones.</label><textarea id="r7a" data-refl="r7a" rows="3"></textarea></div>
+      <div><label class="lbl" for="r7b">«Desde la cocina con amor» (muebles de cocina nuevos) es un titular español: no dice qué es. Reescríbelo como lo haría la web alemana.</label><textarea id="r7b" data-refl="r7b" rows="3"></textarea></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 8 CÓDIGO ======================= -->
+<section class="panel" id="p8" data-g="loc" data-tab="8 · Código" role="tabpanel" hidden>
+  <div class="intro">
+    <span class="layer">Manos a la obra</span>
+    <h2>Localiza con código</h2>
+    <p class="lead">En una web dinámica nadie escribe las fechas ni los precios a mano: el código los formatea según la configuración regional (<i>locale</i>). Cambia lo que se pide, pulsa «Ejecutar» y la página comprueba si lo has resuelto. No hace falta saber programar: solo leer con atención.</p>
+  </div>
+  <div class="card" id="retos"></div>
+</section>
+
+<!-- ======================= UX WRITING 1 ======================= -->
+<section class="panel" id="u1" data-g="ux" data-tab="Bloque 1 · Arregla la interfaz" role="tabpanel" hidden>
+  <div class="intro">
+    <span class="layer">UX writing · Microcopy</span>
+    <h2>Cinco textos que no ayudan</h2>
+    <p class="lead">Lee la situación, escribe tu versión en español y solo después abre la propuesta. Dos minutos por texto.</p>
+    <div class="rules"><span class="rule">Qué pasa</span><span class="rule">Qué puedo hacer</span><span class="rule">Para quién escribo</span><span class="rule">Lo justo, nada más</span></div>
+  </div>
+
+  <article class="card">
+    <div class="card-head"><span class="num">1/5</span><h3>Apache no arranca</h3><span class="where">Panel de control de XAMPP</span></div>
+    <p>El panel de XAMPP solo está en inglés. Una compañera de clase lo abre por primera vez, pulsa <b>Start</b> en Apache y ve esto. No sabe qué es un puerto.</p>
+    <div class="mock mock-scroll"><div class="xampp">
+      <div class="bar2">XAMPP Control Panel</div>
+      <div><span class="t">12:04:31 [Apache]</span> <span class="e">Problem detected!</span></div>
+      <div><span class="t">12:04:31 [Apache]</span> <span class="e">Port 80 in use by "Unable to open process" with PID 4!</span></div>
+      <div><span class="t">12:04:31 [Apache]</span> <span class="e">Apache WILL NOT start without the configured ports free!</span></div>
+      <div><span class="t">12:04:31 [Apache]</span> <span class="i">You need to uninstall/disable/reconfigure the blocking application</span></div>
+      <div><span class="t">12:04:31 [Apache]</span> <span class="i">or reconfigure Apache and the Control Panel to listen on a different port</span></div>
+    </div></div>
+    <div><label class="lbl" for="ux-r1">Tu versión en español, para alguien que no sabe qué es un puerto</label><textarea id="ux-r1" rows="3" data-limit="160" data-ux="Apache no arranca"></textarea><div class="meta"><span data-count="ux-r1"></span><span>Objetivo: 160 caracteres o menos</span></div></div>
+    <div class="actions"><button class="btn" data-reveal="a1">Ver una propuesta</button></div>
+    <div class="answer" id="a1" hidden>
+      <span class="tag">Una propuesta posible</span>
+      <p class="prop">Apache no ha podido arrancar porque otro programa está usando el puerto 80. Cierra ese programa o cambia el puerto de Apache (botón <b>Config</b>).</p>
+      <ul><li>Primero qué pasa, luego qué hacer.</li><li>Sin mayúsculas que gritan ni datos que ella no necesita (el PID).</li><li>«Unable to open process» aparece entre comillas como si fuera el nombre del programa: es un texto de relleno que se ha colado en el mensaje.</li></ul>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head"><span class="num">2/5</span><h3>El enlace ha caducado</h3><span class="where">WordPress · Apariencia › Temas › Subir tema</span></div>
+    <p>Un alumno instala el tema Pet Shop subiendo su archivo .zip, que pesa 12 MB. En este ejemplo, el servidor admite 8 MB como máximo. WordPress responde con un mensaje que <b>no menciona el tamaño</b>: lo da siempre que el archivo supera el límite de PHP.</p>
+    <div class="mock"><div class="wpbar">Escritorio · Pet Shop</div><div class="mockwrap"><div class="wpnotice">El enlace ha caducado.<br><br>Por favor, inténtalo de nuevo.</div></div></div>
+    <div><label class="lbl" for="ux-r2">Tu versión</label><textarea id="ux-r2" rows="3" data-limit="110" data-ux="El enlace ha caducado"></textarea><div class="meta"><span data-count="ux-r2"></span><span>Objetivo: 110 caracteres o menos</span></div></div>
+    <div class="actions"><button class="btn" data-reveal="a2">Ver una propuesta</button></div>
+    <div class="answer" id="a2" hidden>
+      <span class="tag">Una propuesta posible</span>
+      <p class="prop">El archivo pesa 12 MB y el servidor solo admite 8 MB. Amplía el límite de subida o instala el tema copiándolo en la carpeta de temas.</p>
+      <ul><li>Original y propuesta no se parecen porque el original describe mal el problema: no ha caducado nada, y volver a intentarlo no sirve.</li><li>Quien escribe el microcopy (o quien lo localiza y prueba la interfaz) tiene que saber cuándo aparece el mensaje.</li><li>«Por favor» al principio es un calco de <i>please</i>; en español sobra casi siempre en una interfaz.</li><li>Dar las cifras ahorra una búsqueda en internet.</li></ul>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head"><span class="num">3/5</span><h3>La tienda se cae</h3><span class="where">Pet Shop con MySQL parado</span></div>
+    <p>Un <b>cliente</b> entra en la tienda mientras MySQL está parado. PHP no tiene preparado ningún mensaje y muestra esto:</p>
+    <div class="mock mock-scroll"><div class="php"><b>Fatal error</b>: Uncaught mysqli_sql_exception: No se puede establecer una conexión ya que el equipo de destino denegó expresamente dicha conexión in C:\xampp\htdocs\petshop\conexion.php:3</div></div>
+    <div><label class="lbl" for="ux-r3">Tu versión, para el cliente</label><textarea id="ux-r3" rows="3" data-limit="120" data-ux="La tienda se cae"></textarea><div class="meta"><span data-count="ux-r3"></span><span>Objetivo: 120 caracteres o menos</span></div></div>
+    <div class="actions"><button class="btn" data-reveal="a3">Ver una propuesta</button></div>
+    <div class="answer" id="a3" hidden>
+      <span class="tag">Una propuesta posible</span>
+      <p class="prop">La tienda no está disponible ahora mismo. Vuelve a intentarlo dentro de unos minutos.</p>
+      <ul><li>El mismo fallo necesita dos textos: uno para el cliente (aquí) y otro, técnico, para quien administra la web (en el registro de errores).</li><li>Fíjate en la mezcla de idiomas: el mensaje de Windows está localizado; el de PHP, no.</li><li>Mostrar la ruta del servidor a cualquier visitante es, además, un riesgo de seguridad.</li></ul>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head"><span class="num">4/5</span><h3>¿Está seguro?</h3><span class="where">Complemento de la tienda (ejemplo inventado)</span></div>
+    <p>La administradora quiere borrar la entrada <b>«Pienso para perros mayores»</b>. Aparece este cuadro de diálogo:</p>
+    <div class="mock"><div class="mockwrap"><div class="dialog"><p>¿Está seguro?</p><div class="btnrow"><span class="fakebtn">Cancelar</span><span class="fakebtn primary">Aceptar</span></div></div></div></div>
+    <div class="two">
+      <div><label class="lbl" for="ux-r4">Pregunta del cuadro</label><textarea id="ux-r4" rows="3" data-limit="110" data-ux="¿Está seguro? · pregunta"></textarea><div class="meta"><span data-count="ux-r4"></span><span>110 o menos</span></div></div>
+      <div><label class="lbl" for="ux-r4b">Botón principal</label><input type="text" id="ux-r4b" data-limit="22" data-ux="¿Está seguro? · botón"><div class="meta"><span data-count="ux-r4b"></span><span>22 o menos</span></div></div>
+    </div>
+    <div class="actions"><button class="btn" data-reveal="a4">Ver una propuesta</button></div>
+    <div class="answer" id="a4" hidden>
+      <span class="tag">Una propuesta posible</span>
+      <p class="prop">¿Mover «Pienso para perros mayores» a la papelera? Podrás recuperarla durante 30 días.<br><b>[Mover a la papelera]</b> [Cancelar]</p>
+      <ul><li>Se nombra qué se va a borrar y qué consecuencias tiene.</li><li>El botón repite el verbo de la pregunta: «Aceptar» no dice qué acepto.</li><li>La pregunta usa tú o usted según la voz de la marca, pero siempre el mismo en toda la interfaz.</li></ul>
+    </div>
+  </article>
+
+  <article class="card">
+    <div class="card-head"><span class="num">5/5</span><h3>El boletín</h3><span class="where">Pie de página de Pet Shop</span></div>
+    <p>Formulario de suscripción. Mejora el texto que aparece <b>dentro de la cajita</b> del correo y el texto del <b>botón</b>: escríbelos directamente en el formulario.</p>
+    <div class="mock"><div class="form"><p style="font-size:1rem">Introduzca su dirección de correo electrónico en el campo situado a continuación para proceder a darse de alta en nuestro boletín informativo.</p>
+      <input type="text" class="edit" id="ux-r5" data-limit="30" data-ux="Boletín · texto del campo" placeholder="Escribe aquí el texto del campo" aria-label="Texto dentro del campo">
+      <div class="meta" style="margin-top:-.3rem"><span data-count="ux-r5"></span><span>30 o menos</span></div>
+      <div><input type="text" class="editbtn" id="ux-r5b" data-limit="16" data-ux="Boletín · botón" placeholder="Texto del botón" aria-label="Texto del botón" size="14"></div>
+      <div class="meta" style="margin-top:-.3rem"><span data-count="ux-r5b"></span><span>16 o menos</span></div>
+    </div></div>
+    <div class="actions"><button class="btn" data-reveal="a5">Ver una propuesta</button></div>
+    <div class="answer" id="a5" hidden>
+      <span class="tag">Una propuesta posible</span>
+      <p class="prop">Dentro del campo: <b>Tu correo electrónico</b> · Botón: <b>Enviar</b></p>
+    </div>
+  </article>
+</section>
+
+<!-- ======================= UX WRITING 2 ======================= -->
+<section class="panel" id="u2" data-g="ux" data-tab="Bloque 2 · Simplifica y cuenta" role="tabpanel" hidden>
+  <div class="intro">
+    <span class="layer">UX writing · Simplificar</span>
+    <h2>A · Recorta el aviso</h2>
+    <p class="lead">En diciembre, la tienda Pet Shop pone esta franja de aviso en lo alto de todas sus páginas. Déjala en 30 palabras o menos, con lo importante delante. Cinco minutos.</p>
+  </div>
+  <article class="card">
+    <div class="shopbar">localhost/petshop</div>
+    <div class="original banner" id="orig">Estimado cliente: le informamos de que, con el fin de poder garantizar en todo momento la mejor calidad del servicio, y debido al elevado volumen de pedidos que estamos experimentando durante las fechas actuales, es posible que se produzca un retraso en la realización de los envíos. En este sentido, los pedidos realizados con posterioridad al día 20 de diciembre serán entregados a partir del día 7 de enero. Asimismo, le recordamos que puede proceder a la consulta del estado de su pedido en el apartado «Mis pedidos» de su cuenta. Disculpe las molestias.</div>
+    <div class="meta"><span id="origCount"></span><span>Pulsa «Marcar relleno» para ver frases que suelen sobrar</span></div>
+    <div class="actions"><button class="btn" id="markOrig" aria-pressed="false">Marcar relleno</button></div>
+    <div class="two">
+      <div>
+        <label class="lbl" for="ux-simp">Tu versión</label>
+        <textarea id="ux-simp" rows="6"></textarea>
+        <div class="meta"><span id="simpCount"></span><span>Objetivo: 30 palabras o menos</span></div>
+      </div>
+      <div>
+        <p class="lbl">Comprueba antes de enseñarla</p>
+        <ul class="checks">
+          <li><label><input type="checkbox" id="ux-k1">La fecha clave aparece en la primera frase.</label></li>
+          <li><label><input type="checkbox" id="ux-k2">No queda relleno («le informamos de que», «en este sentido»…).</label></li>
+          <li><label><input type="checkbox" id="ux-k3">Uso verbos, no sustantivos («enviar», no «la realización de los envíos»).</label></li>
+          <li><label><input type="checkbox" id="ux-k4">Una idea por frase.</label></li>
+          <li><label><input type="checkbox" id="ux-k5">El usuario sabe qué puede hacer (dónde mirar su pedido).</label></li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <p class="lbl">Relleno que todavía queda en tu versión</p>
+      <div class="preview" id="simpPreview"><span class="empty">Escribe tu versión y aparecerá aquí, con el relleno marcado.</span></div>
+    </div>
+    <div class="actions"><button class="btn" data-reveal="aS">Ver una propuesta</button></div>
+    <div class="answer" id="aS" hidden>
+      <span class="tag">Una propuesta posible · 22 palabras</span>
+      <p class="prop">Los pedidos que hagas después del 20 de diciembre llegarán a partir del 7 de enero. Consulta el estado en Mis pedidos.</p>
+      <ul><li>De 94 palabras a 22, sin perder ningún dato.</li><li>Se pasa de usted a tú: es una decisión de voz de la marca y hay que tomarla una sola vez, en la guía de estilo.</li><li>Las disculpas y los motivos internos («volumen de pedidos») no ayudan a decidir nada.</li><li>¿Y España no era de «alto contexto»? Sí, pero un aviso de servicio no es un titular que invita a soñar: aquí la cortesía está en no hacer perder el tiempo.</li></ul>
+    </div>
+  </article>
+
+  <div class="intro">
+    <span class="layer">UX writing · Storytelling</span>
+    <h2>B · Escribe la escena</h2>
+    <p class="lead">Cada pantalla es una escena de una historia. Escribe los tres textos que Lucía necesita en este momento.</p>
+  </div>
+  <article class="card">
+    <div class="story">
+      <div class="beat"><span class="k">Personaje</span><span>Lucía, 58 años, tiene un perro mayor.</span></div>
+      <div class="beat"><span class="k">Contexto</span><span>En el autobús, con el móvil y una sola mano libre.</span></div>
+      <div class="beat"><span class="k">Objetivo</span><span>Pedir el pienso de siempre para su perro antes de que se acabe.</span></div>
+      <div class="beat"><span class="k">Obstáculo</span><span>Su tarjeta guardada ha caducado.</span></div>
+    </div>
+    <div class="two">
+      <div class="fields">
+        <div><label class="lbl" for="ux-s1">Botón para pagar</label><input type="text" id="ux-s1" data-limit="20" data-ux="Lucía · botón"><div class="meta"><span data-count="ux-s1"></span><span>20 o menos</span></div></div>
+        <div><label class="lbl" for="ux-s2">Error: la tarjeta ha caducado</label><textarea id="ux-s2" rows="3" data-limit="100" data-ux="Lucía · error"></textarea><div class="meta"><span data-count="ux-s2"></span><span>100 o menos</span></div></div>
+        <div><label class="lbl" for="ux-s3">Confirmación del pedido</label><textarea id="ux-s3" rows="3" data-limit="90" data-ux="Lucía · confirmación"></textarea><div class="meta"><span data-count="ux-s3"></span><span>90 o menos</span></div></div>
+      </div>
+      <div>
+        <div class="phone" aria-label="Vista previa en el móvil">
+          <div class="shop">Pet Shop · Tu cesta</div>
+          <div class="pline"><span>Pienso para perros senior, 12 kg</span><span>44,90 €</span></div>
+          <div class="pline"><span>Envío</span><span>Gratis</span></div>
+          <div class="msg errmsg" id="pv2"><span class="empty">Aquí, tu mensaje de error</span></div>
+          <div class="pay" id="pv1">Tu botón</div>
+          <div class="msg okmsg" id="pv3"><span class="empty">Aquí, tu confirmación</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="actions"><button class="btn" data-reveal="aB">Ver una propuesta</button></div>
+    <div class="answer" id="aB" hidden>
+      <span class="tag">Una propuesta posible</span>
+      <p class="prop">Botón: <b>Pagar 44,90 €</b><br>Error: <b>Tu tarjeta terminada en 4417 caducó en septiembre. Añade otra para terminar el pedido.</b><br>Confirmación: <b>Pedido hecho. Llegará el jueves 22 a tu casa.</b></p>
+      <ul><li>El botón dice la acción y el importe: Lucía no tiene que volver a mirar el total.</li><li>El error no culpa a Lucía y le dice el siguiente paso.</li><li>La confirmación cierra la historia: qué ha pasado y cuándo llega.</li></ul>
+    </div>
+  </article>
+</section>
+
+<!-- ======================= ENTREGA ======================= -->
+<section class="panel" id="p9" data-g="end" data-tab="Resumen y descarga" role="tabpanel" hidden>
+  <div class="intro">
+    <h2>Tu resultado</h2>
+    <p class="lead">Revisa lo que has hecho y descarga tus respuestas. Se guardan en una página web (.html) que se abre en cualquier navegador y que puedes imprimir o guardar como PDF.</p>
+  </div>
+  <div class="card">
+    <div class="summary" id="summary"></div>
+    <div class="actions">
+      <button class="btn solid" id="dl">Descargar mis respuestas</button>
+      <button class="btn" id="reset">Empezar de cero</button>
+    </div>
+    <p class="small muted" id="dlNote"></p>
+  </div>
+</section>
+
+<footer>
+  Basado en los materiales de Jesús Torres del Rey (Universidad de Salamanca): <i>Variables culturales en localización</i>, <i>Aspectos culturales en localización web</i> y <i>UX Writing para localizar</i>. Referencias: Singh y Pereira (2011); Yunker (2017, 2018); Hofstede; Hall; Jiménez Crespo (2024); Podmajersky (2019); Metts y Welfle (2020); Parnofiello (2020); Yifrah (2019); Quesenbery y Brooks (2010).
+</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+// ---------------- Estado ----------------
+const KEY='l10n-lab-v3';
+const blank=()=>({nombre:'',e1:{},e2:{a:{},es:null,jp:null,checked:false},e3:{a:{},checked:false},e4:{a:{},checked:false},e5:{checked:false},e6:{prof:{},feat:{},checked:false},e7:{picks:{},checked:false},e8:{},refl:{},ux:{},tab:'p0'});
+let S;
+try{S=Object.assign(blank(),JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=blank()}
+let saveT;
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},150);updateScore();}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function el(tag,attrs,html){const e=document.createElement(tag);if(attrs)for(const k in attrs){if(k==='class')e.className=attrs[k];else e.setAttribute(k,attrs[k]);}if(html!=null)e.innerHTML=html;return e;}
+function fb(type,html){return el('div',{class:'fb '+type},html);}
+function warnIn(box,msg){box.innerHTML='';box.appendChild(fb('warn',msg));}
+
+// ---------------- Navegación ----------------
+const panels=[...document.querySelectorAll('section.panel')];
+const nav=$('nav.tabs');
+const groupBtns=[...document.querySelectorAll('.group')];
+function show(id){
+  const p=document.getElementById(id)||panels[0];
+  const g=p.dataset.g;
+  panels.forEach(x=>{x.hidden=x!==p;});
+  groupBtns.forEach(b=>b.setAttribute('aria-pressed',b.dataset.g===g));
+  document.body.classList.toggle('ux',g==='ux');
+  nav.innerHTML='';
+  panels.filter(x=>x.dataset.g===g).forEach(x=>{
+    const b=el('button',{class:'tab',role:'tab','aria-controls':x.id,id:'tab-'+x.id,'aria-selected':x===p},'<span class="dot"></span>'+esc(x.dataset.tab));
+    b.addEventListener('click',()=>show(x.id));nav.appendChild(b);
+  });
+  nav.hidden=g==='end';
+  S.tab=p.id;save();
+  if(p.id==='p9')renderSummary();
+  window.scrollTo({top:0});
+}
+groupBtns.forEach(b=>b.addEventListener('click',()=>{
+  const last=S['last_'+b.dataset.g];
+  show(last||panels.find(x=>x.dataset.g===b.dataset.g).id);
+}));
+const _show=show;
+show=function(id){_show(id);const p=document.getElementById(id);if(p)S['last_'+p.dataset.g]=id;};
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
+
+['nombre'].forEach(id=>{const i=$('#'+id);i.value=S[id]||'';i.addEventListener('input',()=>{S[id]=i.value;save();});});
+document.querySelectorAll('[data-refl]').forEach(t=>{t.value=S.refl[t.dataset.refl]||'';t.addEventListener('input',()=>{S.refl[t.dataset.refl]=t.value;save();});});
+
+// Utilidad: grupo de opciones con corrección
+function choice(box,opts,cur,okList,checked,onPick,cls){
+  const o=el('div',{class:'opts'+(cls?' '+cls:'')});
+  opts.forEach((t,i)=>{
+    const b=el('button',{class:'opt','aria-pressed':cur===i},esc(t));
+    if(checked){if(okList.includes(i))b.classList.add('right');else if(cur===i)b.classList.add('wrong');}
+    b.addEventListener('click',()=>onPick(i));o.appendChild(b);
+  });
+  box.appendChild(o);
+}
+
+// =====================================================
+// 1 · FORMATOS
+// =====================================================
+const LOC={'es-ES':'España','es-MX':'México','en-GB':'Reino Unido','de-DE':'Alemania','fr-FR':'Francia','ja-JP':'Japón','pt-BR':'Brasil'};
+const ITEMS=[
+  {k:'fecha',lab:'Fecha corta',q:'Fecha corta del evento (7 de octubre de 2025)',opts:['07/10/2025','10/07/2025','2025/10/07','07.10.2025'],orig:1,
+    ok:{'es-ES':[0],'es-MX':[0],'en-GB':[0],'de-DE':[3],'fr-FR':[0],'ja-JP':[2],'pt-BR':[0]},
+    why:{'es-ES':'Día/mes/año con barras. El 10/07/2025 del original se leería como «10 de julio».',
+      'es-MX':'Día/mes/año, como en España. Que México sea vecino de EE. UU. no cambia el orden.',
+      'en-GB':'Día/mes/año, como España, aunque hable inglés. Misma lengua que EE. UU., distinta convención.',
+      'de-DE':'En Alemania se separa con puntos: 07.10.2025 (o 7.10.2025).',
+      'fr-FR':'Día/mes/año con barras.',
+      'ja-JP':'Japón ordena de lo más grande a lo más pequeño: año/mes/día (2025/10/07 o 2025年10月7日).',
+      'pt-BR':'Día/mes/año con barras.'}},
+  {k:'hora',lab:'Hora',q:'Hora de inicio (las dos y media de la tarde)',opts:['2:30 PM','14:30','2:30 p. m.','午後2:30'],orig:0,
+    ok:{'es-ES':[1],'es-MX':[1,2],'en-GB':[0,1],'de-DE':[1],'fr-FR':[1],'ja-JP':[1,3],'pt-BR':[1]},
+    why:{'es-ES':'Solo 14:30. En España, horarios e interfaces usan el formato de 24 horas; al hablar decimos «las dos y media», pero no se escribe «2:30 p. m.».',
+      'es-MX':'Valen los dos. En México el formato de 12 horas («2:30 p. m.») es muy habitual y es el que usan los navegadores, y el de 24 horas también se usa. Fíjate en «p. m.»: con puntos y espacio, no «PM».',
+      'en-GB':'Valen los dos. En el Reino Unido conviven el formato de 24 horas (horarios de transporte, muchas interfaces) y el de 12 horas (día a día). El estilo británico suele escribir este último en minúscula: «2.30 pm».',
+      'de-DE':'Solo 14:30. En Alemania se usa el formato de 24 horas (en un texto, a menudo «14:30 Uhr»).',
+      'fr-FR':'Solo 14:30. En Francia se usa el formato de 24 horas; en un texto cuidado, la tipografía francesa prefiere «14 h 30».',
+      'ja-JP':'Valen los dos. En Japón conviven el formato de 24 horas (horarios, transporte) y el de 12 horas, que se escribe con 午後 («tarde») delante, no con «PM» detrás.',
+      'pt-BR':'Solo 14:30 (o «14h30»). En Brasil se escribe con el formato de 24 horas.'}},
+  {k:'num',lab:'Número',q:'Recaudación solidaria (algo más de un millón, con decimales)',opts:['1,234,567.89','1.234.567,89','1 234 567,89',"1'234'567.89"],orig:0,
+    ok:{'es-ES':[1,2],'es-MX':[0],'en-GB':[0],'de-DE':[1],'fr-FR':[2],'ja-JP':[0],'pt-BR':[1]},
+    why:{'es-ES':'La coma es el separador decimal. Para los miles, el punto es lo más habitual en pantalla; la RAE recomienda un espacio fino. Las dos valen.',
+      'es-MX':'Sorpresa: México, a diferencia de España, usa el punto decimal y la coma para los miles. Mismo idioma, otro formato.',
+      'en-GB':'Como EE. UU.: coma para los miles y punto decimal.',
+      'de-DE':'Punto para los miles y coma decimal, como en España.',
+      'fr-FR':'Espacio para los miles y coma decimal. El apóstrofo (1\'234\'567.89) es el de Suiza.',
+      'ja-JP':'Coma para los miles y punto decimal.',
+      'pt-BR':'Punto para los miles y coma decimal.'}},
+  {k:'semana',lab:'Primer día de la semana',q:'¿En qué día empieza la semana en el calendario?',opts:['Lunes','Domingo','Sábado'],orig:1,
+    ok:{'es-ES':[0],'es-MX':[1],'en-GB':[0],'de-DE':[0],'fr-FR':[0],'ja-JP':[1],'pt-BR':[1]},
+    why:{'es-ES':'Lunes, como en casi toda Europa (y en la norma ISO 8601). Un calendario que empiece en domingo descoloca a cualquiera que lo mire rápido.',
+      'es-MX':'Domingo: aquí México se parece más a EE. UU. que a España.',
+      'en-GB':'Lunes. Otra diferencia con EE. UU.','de-DE':'Lunes, como en casi toda Europa.','fr-FR':'Lunes, como en casi toda Europa.',
+      'ja-JP':'Domingo, como en EE. UU.','pt-BR':'Domingo.'}},
+  {k:'temp',lab:'Temperatura',q:'Temperatura prevista para el evento al aire libre (en el original, 72 °F)',opts:['72 °F','72 °C','22 °C'],orig:0,
+    ok:{'es-ES':[2],'es-MX':[2],'en-GB':[2],'de-DE':[2],'fr-FR':[2],'ja-JP':[2],'pt-BR':[2]},
+    why:(()=>{const t='72 °F son unos 22 °C. Fuera de EE. UU. y unos pocos países se usa Celsius. Cambiar solo la unidad (72 °C) sería anunciar un horno: las medidas no se traducen, se convierten.';const o={};['es-ES','es-MX','en-GB','de-DE','fr-FR','ja-JP','pt-BR'].forEach(k=>o[k]=t);return o;})()}
+];
+ITEMS.push({k:'tel',lab:'Teléfono de información',q:'Teléfono de información (en el original, el de la oficina de Nueva York)',
+  opts:['+1 (212) 555-0147','+34 912 345 678','+52 55 1234 5678','+44 20 7946 0958','+49 30 12345678','+33 1 23 45 67 89','+81 3-1234-5678','+55 11 3456-7890'],orig:0,
+  ok:{'es-ES':[1],'es-MX':[2],'en-GB':[3],'de-DE':[4],'fr-FR':[5],'ja-JP':[6],'pt-BR':[7]},
+  why:{'es-ES':'+34. El público necesita un teléfono local: llamar a EE. UU. es caro y hay seis horas de diferencia. En España los números tienen nueve cifras y suelen agruparse de tres en tres.',
+    'es-MX':'+52. Los números mexicanos tienen diez cifras; 55 es Ciudad de México.',
+    'en-GB':'+44. Al marcar con el prefijo internacional desaparece el 0 del prefijo de zona: el 020 de Londres pasa a ser 20.',
+    'de-DE':'+49. En Alemania la longitud de los números varía, y también se quita el 0 del prefijo de zona (el 030 de Berlín pasa a ser 30).',
+    'fr-FR':'+33. En Francia las cifras se agrupan de dos en dos.',
+    'ja-JP':'+81. En Japón los grupos se separan con guiones; dentro del país, Tokio se marca 03.',
+    'pt-BR':'+55. 11 es São Paulo; los móviles brasileños tienen una cifra más y empiezan por 9 (11 91234-5678).'}});
+const WEEK_START={0:1,1:0,2:6};
+let curLoc=S.curLoc||'es-ES';
+function l1(){return S.e1[curLoc]||(S.e1[curLoc]={a:{},checked:false,score:0});}
+const locBox=$('#locales');
+Object.keys(LOC).forEach(code=>{
+  const b=el('button',{class:'opt','data-loc':code},esc(LOC[code]));
+  b.addEventListener('click',()=>{curLoc=code;S.curLoc=code;save();render1();});
+  locBox.appendChild(b);
+});
+$('#aleatorio').addEventListener('click',()=>{
+  const pend=Object.keys(LOC).filter(c=>c!=='es-ES'&&!(S.e1[c]&&S.e1[c].checked)&&c!==curLoc);
+  const pool=pend.length?pend:Object.keys(LOC).filter(c=>c!==curLoc);
+  curLoc=pool[Math.floor(Math.random()*pool.length)];S.curLoc=curLoc;save();render1();
+});
+function render1(){
+  locBox.querySelectorAll('.opt').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.loc===curLoc);const st=S.e1[b.dataset.loc];b.textContent=LOC[b.dataset.loc]+(st&&st.checked?' ✓':'');});
+  const st=l1();const box=$('#items');box.innerHTML='';
+  ITEMS.forEach(it=>{
+    const w=el('div',{class:'q'});w.appendChild(el('div',{class:'lbl'},esc(it.q)));
+    const cur=st.a[it.k]||[];const ok=it.ok[curLoc];
+    const o=el('div',{class:'opts'});
+    it.opts.forEach((t,i)=>{
+      const b=el('button',{class:'opt','aria-pressed':cur.includes(i)},esc(t));
+      if(st.checked){if(ok.includes(i))b.classList.add(cur.includes(i)?'right':'missed');else if(cur.includes(i))b.classList.add('wrong');}
+      b.addEventListener('click',()=>{
+        const a=(st.a[it.k]||[]).slice();const j=a.indexOf(i);
+        if(j>=0)a.splice(j,1);else a.push(i);
+        if(a.length)st.a[it.k]=a.sort((x,y)=>x-y);else delete st.a[it.k];
+        st.checked=false;save();render1();
+      });
+      o.appendChild(b);
+    });
+    w.appendChild(o);box.appendChild(w);
+  });
+  const pick=k=>{const it=ITEMS.find(x=>x.k===k);const v=st.a[k];return it.opts[v&&v.length?v[0]:it.orig];};
+  $('#pvFecha').textContent=pick('fecha');$('#pvHora').textContent=pick('hora');$('#pvNum').textContent=pick('num');$('#pvTemp').textContent=pick('temp');$('#pvTel').textContent=pick('tel');
+  drawCal(WEEK_START[st.a.semana&&st.a.semana.length?st.a.semana[0]:1]);
+  $('#pvNote').textContent=Object.keys(st.a).length?'Vista previa con tus decisiones para '+LOC[curLoc]+'. Lo que aún no has elegido sigue como en el original.':'Vista previa con los valores originales de EE. UU.';
+  const f=$('#fb1');f.innerHTML='';$('#res1').textContent='';
+  if(st.checked){
+    let ok=0;
+    ITEMS.forEach(it=>{
+      const good=sameSet(st.a[it.k],it.ok[curLoc]);if(good)ok++;
+      let badge='';
+      if(curLoc!=='es-ES'){const same=sameSet(it.ok[curLoc],it.ok['es-ES']);badge=same?'<span class="badge same">Igual que en España</span>':'<span class="badge diff">Distinto de España</span>';}
+      const extra=!good&&it.ok[curLoc].length>1?' Aquí había que marcar las dos opciones correctas.':'';
+      f.appendChild(fb(good?'ok':'bad','<b>'+(good?'Bien':'No')+' · '+esc(it.lab)+'.</b>'+badge+' '+esc(it.why[curLoc]+extra)));
+    });
+    st.score=ok;$('#res1').textContent=ok+' / '+ITEMS.length+' en '+LOC[curLoc];
+  }
+  $('#intlOut').hidden=true;
+}
+function sameSet(a,b){a=a||[];return a.length===b.length&&a.every(x=>b.includes(x));}
+function drawCal(start){
+  const cal=$('#pvCal');cal.innerHTML='';
+  let names;try{const f=new Intl.DateTimeFormat(curLoc,{weekday:'narrow'});names=[...Array(7)].map((_,i)=>f.format(new Date(2025,9,5+i)));}catch(e){names=['D','L','M','X','J','V','S'];}
+  for(let i=0;i<7;i++)cal.appendChild(el('div',{class:'h'},esc(names[(start+i)%7])));
+  const off=(new Date(2025,9,1).getDay()-start+7)%7;
+  for(let i=0;i<off;i++)cal.appendChild(el('div',{class:'d e'},''));
+  for(let d=1;d<=31;d++)cal.appendChild(el('div',{class:'d'+(d===7?' x':'')},String(d)));
+  try{$('#pvCalCap').textContent=new Intl.DateTimeFormat(curLoc,{month:'long',year:'numeric'}).format(new Date(2025,9,7));}catch(e){}
+}
+$('#check1').addEventListener('click',()=>{
+  const st=l1();const miss=ITEMS.length-Object.keys(st.a).length;
+  if(miss){warnIn($('#fb1'),'Te faltan '+miss+' decisiones por tomar.');return;}
+  st.checked=true;save();render1();updateScore();
+});
+$('#intl1').addEventListener('click',()=>{
+  const d=new Date(2025,9,7,14,30);const o=$('#intlOut');const L=curLoc;
+  const lines=['// Lo que dice tu navegador para '+L+' ('+LOC[L]+')'];
+  try{
+    lines.push("dateStyle 'short'  →  "+new Intl.DateTimeFormat(L,{dateStyle:'short'}).format(d));
+    lines.push("dateStyle 'full'   →  "+new Intl.DateTimeFormat(L,{dateStyle:'full'}).format(d));
+    lines.push("timeStyle 'short'  →  "+new Intl.DateTimeFormat(L,{timeStyle:'short'}).format(d));
+    lines.push("número             →  "+new Intl.NumberFormat(L).format(1234567.89));
+    const loc=new Intl.Locale(L);const wi=loc.getWeekInfo?loc.getWeekInfo():loc.weekInfo;
+    if(wi){const dn=['','lunes','martes','miércoles','jueves','viernes','sábado','domingo'];lines.push('primer día         →  '+dn[wi.firstDay]);}
+  }catch(e){lines.push('(Tu navegador no admite alguna de estas funciones.)');}
+  lines.push('','// El navegador sigue los datos de Unicode (CLDR). No siempre coinciden con lo que se ve en la calle.');
+  o.textContent=lines.join('\n');o.hidden=false;
+});
+
+// =====================================================
+// 2 · NOMBRES Y FORMULARIOS
+// =====================================================
+const PEOPLE=[
+  {nm:'María José García Fernández',fr:'España',q:'¿Qué escribe en «Last name»?',opts:['Fernández','García','García Fernández'],ok:2,
+   why:'Tiene un nombre compuesto (María José) y dos apellidos: normalmente el primero es el del padre (García) y el segundo, el de la madre (Fernández). Necesita los dos en «Last name». Y aun así, muchos sistemas la llamarán «Ms. Fernández» porque toman la última palabra.'},
+  {nm:'山田 太郎 (Yamada Tarō)',fr:'Japón',q:'¿Qué escribe en «First name»?',opts:['Yamada','Tarō'],ok:1,
+   why:'En japonés el apellido va delante: Yamada es el apellido y Tarō el nombre. En un formulario occidental hay que darle la vuelta, y es fácil equivocarse. Desde 2020, el Gobierno japonés pide que en sus documentos en inglés se mantenga el orden apellido-nombre (YAMADA Tarō).'},
+  {nm:'Ana Clara Souza Lima',fr:'Brasil',q:'¿Cuál es, normalmente, el apellido de su padre?',opts:['Souza','Lima'],ok:1,
+   why:'En Brasil lo habitual es poner primero el apellido de la madre y al final el del padre: justo al revés que en España. Y el apellido por el que se la conoce suele ser el último: es la señora Lima. Un sistema español que use el primer apellido la llamaría por el de su madre.'},
+  {nm:'Björk Guðmundsdóttir',fr:'Islandia',q:'¿Cómo se dirigen a ella en Islandia, incluso en un contexto formal?',opts:['Sra. Guðmundsdóttir','Björk'],ok:1,
+   why:'«Guðmundsdóttir» significa «hija de Guðmundur»: no es un apellido de familia y sus hermanos varones o sus hijos no lo comparten. En Islandia se trata a la gente por el nombre, también en contextos formales, y la guía telefónica se ordena por nombre.'}
+];
+const KATA={q:'En el formulario japonés de la diapositiva, debajo de 姓 (apellido) y 名 (nombre) hay otros dos campos en katakana: セイ y メイ. ¿Para qué sirven?',
+  opts:['Para escribir el nombre en inglés','Para indicar cómo se lee el nombre','Para el nombre de la empresa'],ok:1,
+  why:'Un nombre escrito en kanji puede leerse de varias maneras, así que se pide la lectura en katakana. Sin ese campo, la empresa no sabría cómo pronunciarlo ni cómo ordenarlo alfabéticamente.'};
+const FES=[
+  {t:'Formulario A',f:[['First name','Last name']],why:'Es el original: no hay sitio claro para dos apellidos.'},
+  {t:'Formulario B',f:[['Nombre','Segundo nombre'],['Apellido']],why:'Solo deja sitio para un apellido y obliga a rellenar un segundo nombre que mucha gente no tiene.'},
+  {t:'Formulario C',f:[['Nombre','Segundo nombre (opcional)'],['Apellido','Segundo apellido (opcional)']],why:'Recoge los nombres compuestos (María José) y los dos apellidos, y deja como opcionales los campos que no todo el mundo tiene: un cliente extranjero puede no tener segundo apellido.'}
+];
+const OK_ES=2,OK_JP=1;
+const FJP=[
+  {t:'Formulario A',f:[['名 Nombre','姓 Apellido']],why:'Mantiene el orden occidental: el nombre delante.'},
+  {t:'Formulario B',f:[['姓 Apellido','名 Nombre'],['セイ (lectura)','メイ (lectura)']],why:'Apellido primero y lectura en katakana: es el modelo habitual en Japón (el de la diapositiva).'},
+  {t:'Formulario C',f:[['Full name (alfabeto latino)']],why:'Obliga a escribir en alfabeto latino y no sabe qué es apellido y qué es nombre.'}
+];
+function render2(){
+  const st=S.e2;const box=$('#people');box.innerHTML='';
+  PEOPLE.forEach((p,i)=>{
+    const w=el('div',{class:'q'});
+    w.appendChild(el('div',{class:'person'},'<span class="nm">'+esc(p.nm)+'</span><span class="fr">'+esc(p.fr)+'</span>'));
+    w.appendChild(el('div',{class:'lbl'},esc(p.q)));
+    choice(w,p.opts,st.a[i],[p.ok],st.checked,j=>{st.a[i]=j;st.checked=false;save();render2();});
+    if(st.checked)w.appendChild(fb(st.a[i]===p.ok?'ok':'bad',p.why));
+    box.appendChild(w);
+  });
+  const w=el('div',{class:'q'});w.appendChild(el('div',{class:'lbl'},esc(KATA.q)));
+  choice(w,KATA.opts,st.a.k,[KATA.ok],st.checked,j=>{st.a.k=j;st.checked=false;save();render2();},'col');
+  if(st.checked)w.appendChild(fb(st.a.k===KATA.ok?'ok':'bad',esc(KATA.why)));
+  box.appendChild(w);
+  [['formsES',FES,'es',OK_ES],['formsJP',FJP,'jp',OK_JP]].forEach(([id,list,key,okI])=>{
+    const b=$('#'+id);b.innerHTML='';
+    list.forEach((f,i)=>{
+      const m=el('button',{class:'fmock','aria-pressed':st[key]===i});
+      if(st.checked){if(i===okI)m.classList.add('right');else if(st[key]===i)m.classList.add('wrong');}
+      m.appendChild(el('span',{class:'ttl'},esc(f.t)));
+      f.f.forEach(row=>{const r=el('div',{class:row.length>1?'rowf':''});row.forEach(x=>r.appendChild(el('div',{class:'fld'},esc(x))));m.appendChild(r);});
+      m.addEventListener('click',()=>{st[key]=i;st.checked=false;save();render2();});
+      b.appendChild(m);
+    });
+  });
+  const f=$('#fb2');f.innerHTML='';$('#res2').textContent='';
+  if(st.checked){
+    [['España',FES,'es',OK_ES],['Japón',FJP,'jp',OK_JP]].forEach(([n,list,key,okI])=>{const good=st[key]===okI;f.appendChild(fb(good?'ok':'bad','<b>'+n+': '+(good?'bien':'no del todo')+'.</b> '+list[st[key]].why+(good?'':' Mejor el '+list[okI].t.toLowerCase()+': '+list[okI].why)));});
+    f.appendChild(fb('info','<b>¿Y para todo el mundo a la vez?</b> El W3C recomienda un campo «Nombre completo» y otro «¿Cómo quieres que te llamemos?», en lugar de suponer cómo se divide un nombre.'));
+    $('#res2').textContent=score2()+' / 7';
+  }
+}
+function score2(){const st=S.e2;let s=0;PEOPLE.forEach((p,i)=>{if(st.a[i]===p.ok)s++;});if(st.a.k===KATA.ok)s++;if(st.es===OK_ES)s++;if(st.jp===OK_JP)s++;return s;}
+$('#check2').addEventListener('click',()=>{
+  const st=S.e2;const miss=PEOPLE.filter((_,i)=>st.a[i]==null).length+(st.a.k==null?1:0)+(st.es==null?1:0)+(st.jp==null?1:0);
+  if(miss){warnIn($('#fb2'),'Te faltan '+miss+' respuestas (revisa también las personas de arriba).');return;}
+  st.checked=true;save();render2();
+});
+
+// =====================================================
+// 3 · TÚ, USTED, VOS
+// =====================================================
+const TRATO=[
+  {ctx:'<b>Argentina</b> · App de música para público joven · Botón para empezar la prueba gratuita',opts:['Prueba gratis','Probá gratis','Pruebe gratis'],ok:[1],
+   why:'En Argentina y Uruguay el voseo es la forma normal de tratar de tú, también en publicidad e interfaces: «probá», «descargá», «suscribite». «Prueba» suena a España o a español «neutro».'},
+  {ctx:'<b>España</b> · Tienda de juegos de mesa · Mensaje a un grupo de amigos que acaba de reservar mesa',opts:['¡Venid cuando queráis!','¡Vengan cuando quieran!'],ok:[0],
+   why:'En España, para tratar de tú a varias personas se usa «vosotros»: «venid», «queráis». «Ustedes» en España es formal (salvo en Canarias y en parte de Andalucía).'},
+  {ctx:'<b>México</b> · La misma tienda · El mismo mensaje',opts:['¡Venid cuando queráis!','¡Vengan cuando quieran!'],ok:[1],
+   why:'En América no se usa «vosotros»: «ustedes» sirve para el trato formal y para el informal. «Venid» suena a España (o a película doblada).'},
+  {ctx:'<b>España</b> · Sede electrónica de un ministerio · Botón para identificarse',opts:['Identifícate','Identifíquese','Identificate'],ok:[1],
+   why:'La Administración española suele tratar de usted a la ciudadanía. Muchas marcas españolas, incluidos bancos, han pasado al tú: es una decisión de voz que se fija en la guía de estilo. «Identificate» es la forma del voseo.'},
+  {ctx:'<b>Todos los países</b> · Web que publica una sola versión en español para España y Latinoamérica · Botón de acceso',opts:['Inicia sesión','Iniciá sesión','Inicie sesión','Iniciar sesión'],ok:[3],
+   why:'Cuando un mismo texto tiene que servir para todos los mercados, el infinitivo (o una forma impersonal) esquiva el problema del tú, el usted y el vos. Es la solución típica del español internacional en botones y menús.'},
+  {ctx:'<b>España</b> · Tienda en línea que ha decidido tratar de tú a sus clientes · Mensaje en la pantalla de acceso',opts:['Si no recuerdas tu contraseña, haga clic aquí.','Si no recuerdas tu contraseña, haz clic aquí.','Si no recuerda su contraseña, haz clic aquí.'],ok:[1],
+   why:'Mezclar tú y usted en la misma frase (o en la misma interfaz) es uno de los errores más frecuentes al localizar, sobre todo cuando varias personas traducen cadenas sueltas sin una guía de estilo.'}
+];
+function render3(){
+  const st=S.e3;const box=$('#trato');box.innerHTML='';
+  TRATO.forEach((t,i)=>{
+    const w=el('div',{class:'q'});w.appendChild(el('div',{class:'ctx'},t.ctx));
+    choice(w,t.opts,st.a[i],t.ok,st.checked,j=>{st.a[i]=j;st.checked=false;save();render3();});
+    if(st.checked)w.appendChild(fb(t.ok.includes(st.a[i])?'ok':'bad',esc(t.why)));
+    box.appendChild(w);
+  });
+  $('#res3').textContent=st.checked?score3()+' / '+TRATO.length:'';$('#fb3').innerHTML='';
+}
+function score3(){return TRATO.filter((t,i)=>t.ok.includes(S.e3.a[i])).length;}
+$('#check3').addEventListener('click',()=>{
+  const miss=TRATO.filter((_,i)=>S.e3.a[i]==null).length;
+  if(miss){warnIn($('#fb3'),'Te faltan '+miss+' respuestas.');return;}
+  S.e3.checked=true;save();render3();
+});
+
+// =====================================================
+// 4 · IMÁGENES Y GESTOS
+// =====================================================
+const ACTS=['Lo dejo igual','Lo adapto','Lo retiro'];
+const CASES=[
+  {img:'https://www.apple.com/v/iphone-air/i/images/overview/welcome/hero__c8vidxwr9imq_xlarge.jpg',alt:'Mano que sostiene un móvil muy fino entre el pulgar y el índice',
+   mk:'Corea del Sur · 2025',d:'Anuncio de un móvil muy fino: una mano lo sostiene pellizcándolo entre el pulgar y el índice para que se vea lo delgado que es.',ok:[1],
+   real:'Es el iPhone Air de Apple. En el resto del mundo, la mano sale; en Corea del Sur, el móvil aparece solo. Allí ese gesto se asocia a comunidades en línea que lo usan para burlarse del tamaño del pene, y desde 2021 marcas como la cadena de tiendas GS25 retiraron anuncios por él tras boicots y protestas.',
+   src:[['PetaPixel (2025)','https://petapixel.com/2025/09/18/apple-quietly-edits-iphone-ads-in-south-korea-that-offended-men'],['AP vía WTOP (2021)','https://wtop.com/asia/2021/10/why-a-hand-gesture-has-south-korean-companies-on-edge/']]},
+  {img:'https://creativepool.com/files/magazine/images/full/_1303.png',alt:'Logotipo de una cafetería con una sirena de dos colas',
+   imgRes:'https://i.redd.it/wj6kavrcvta51.jpg',altRes:'Logotipo adaptado para Arabia Saudí: solo se ve la corona de la sirena',
+   mk:'Arabia Saudí · años 90',d:'Logotipo de una cadena de cafeterías: una sirena de dos colas con el torso desnudo.',ok:[1],
+   real:'Es Starbucks. En Arabia Saudí la sirena se consideraba inapropiada y el logotipo local conservaba solo su corona.',
+   src:[['TIME (2011)','https://newsfeed.time.com/?p=42328'],['The Washington Post (2002)','https://www.washingtonpost.com/archive/opinions/2002/01/26/the-saudi-sellout/71c3ca17-277b-43e8-9a8c-9d9c9cc1e3d3/']]},
+  {ico:'🛋️',imgRes:'https://s.wsj.net/public/resources/images/OB-UU234_1001ik_P_20121001113927.jpg',altRes:'La misma foto del catálogo de IKEA en Suecia y en Arabia Saudí, donde se ha borrado a la mujer',
+   mk:'Arabia Saudí · 2012',d:'Catálogo de muebles: las mismas fotos de casas en todo el mundo, con familias, mujeres y niñas.',ok:[0,1,2],debate:true,
+   real:'Es IKEA. En el catálogo saudí se borraron con retoque las mujeres y niñas de las fotos. En Suecia, ministras del Gobierno lo criticaron con dureza e IKEA lamentó la decisión. Aquí no hay una respuesta correcta: ¿había otras opciones, como fotos sin personas o con ropa distinta?',
+   src:[['Al Jazeera (2012)','https://www.aljazeera.com/news/2012/10/1/swedish-firm-erases-women-in-saudi-catalogue']]},
+  {img:'https://media.assettype.com/gulfnews%2Fimport%2F2019%2F01%2F31%2F20190131_airmax270_resources1_16a3107b8fe_large.jpg?w=640&auto=format%2Ccompress&fit=max',alt:'Zapatilla deportiva con el logotipo «Air» en la suela',
+   imgRes:'https://media.assettype.com/gulfnews%2F2024-11-16%2Flcfewby4%2F20190131_Nike_petition_resources1_16a3107b820_original_ratio.jpg?w=1200&auto=format%2Ccompress',altRes:'Imagen de la petición contra el diseño de la suela',
+   mk:'Países de mayoría musulmana · 1997 y 2019',d:'Zapatillas con la palabra «Air» dibujada con un trazo que algunas personas leen como «Alá» escrito en árabe: en 1997, en el talón; en 2019, en la suela de unas Air Max (las de la foto).',ok:[1,2],
+   real:'Es Nike: retiró una línea de zapatillas en 1997. En 2019 hubo otra petición de retirada por un diseño parecido en la suela de unas Air Max. En muchos países árabes, mostrar la suela del zapato ya es ofensivo; pisar el nombre de Dios, mucho más.',
+   src:[['Gulf News (2019)','https://gulfnews.com/world/nike-faces-demand-to-recall-sneakers-as-muslims-object-to-design-1.1548932067296']]}
+];
+function pic(src,alt,cls){
+  const i=el('img',{src:src,alt:alt,loading:'lazy',referrerpolicy:'no-referrer'});
+  if(cls)i.className=cls;
+  i.addEventListener('error',()=>i.replaceWith(el('div',{class:'imgerr'},'No se ha podido cargar la imagen.')));
+  return i;
+}
+function render4(){
+  const st=S.e4;const box=$('#cases');box.innerHTML='';
+  CASES.forEach((c,i)=>{
+    const w=el('div',{class:'case'});
+    w.appendChild(el('div',{class:'mk'},esc(c.mk)));
+    if(c.img){w.appendChild(pic(c.img,c.alt));w.appendChild(el('div',null,esc(c.d)));}
+    else w.appendChild(el('div',{class:'desc'},'<span class="ico" aria-hidden="true">'+c.ico+'</span><span>'+esc(c.d)+'</span>'));
+    choice(w,ACTS,st.a[i],c.debate?[]:c.ok,st.checked&&!c.debate,j=>{st.a[i]=j;st.checked=false;save();render4();});
+    if(st.checked){
+      const good=c.ok.includes(st.a[i]);
+      const links=c.src.map(([t,u])=>u?'<a href="'+u+'" target="_blank" rel="noopener">'+esc(t)+'</a>':esc(t)).join(' · ');
+      const box2=fb(c.debate?'info':(good?'ok':'bad'),'<b>'+(c.debate?'Para debatir.':(good?'Bien visto.':'Lo que pasó:'))+'</b> '+esc(c.real));
+      if(c.imgRes)box2.appendChild(pic(c.imgRes,c.altRes,'resimg'));
+      if(links)box2.appendChild(el('div',{class:'src muted'},(c.src.length>1?'Fuentes: ':'Fuente: ')+links));
+      w.appendChild(box2);
+    }
+    box.appendChild(w);
+  });
+  $('#res4').textContent=st.checked?score4()+' / '+CASES.filter(c=>!c.debate).length:'';
+}
+function score4(){return CASES.filter((c,i)=>!c.debate&&c.ok.includes(S.e4.a[i])).length;}
+$('#check4').addEventListener('click',()=>{
+  const miss=CASES.filter((_,i)=>S.e4.a[i]==null).length;
+  if(miss){const b=el('div');b.appendChild(fb('warn','Te faltan '+miss+' casos por decidir.'));$('#res4').textContent='';$('#cases').after(b);setTimeout(()=>b.remove(),2500);return;}
+  S.e4.checked=true;save();render4();
+});
+
+// =====================================================
+// 5 · JAPÓN
+// =====================================================
+const JP={
+  color:{lab:'Colores del cartel',opts:[
+    {v:'kohaku',t:'Rojo y blanco',s:2,ty:'ok',w:'Rojo y blanco juntos (紅白, kōhaku) son los colores de la celebración en Japón: bodas, Año Nuevo, el programa musical de Nochevieja.',bg:'linear-gradient(180deg,#C8102E 0 22px,#FFFFFF 22px calc(100% - 22px),#C8102E calc(100% - 22px))',fg:'#1E2433'},
+    {v:'bn',t:'Blanco y negro',s:0,ty:'bad',w:'Blanco y negro juntos recuerdan a las cortinas de los funerales (鯨幕, kujiramaku). Muy mala combinación para una oferta.',bg:'linear-gradient(180deg,#111 0 22px,#FFFFFF 22px calc(100% - 22px),#111 calc(100% - 22px))',fg:'#1E2433'},
+    {v:'oro',t:'Dorado',s:2,ty:'ok',w:'Elegante y sin connotaciones negativas.',bg:'#F2D27A',fg:'#2A1A00'},
+    {v:'azul',t:'Azul',s:1,ty:'warn',w:'No ofende, pero tampoco aprovecha ningún significado positivo.',bg:'#DCE7FF',fg:'#1E2433'}]},
+  noches:{lab:'Duración de la estancia',opts:[
+    {v:'3',t:'3 noches',s:1,ty:'warn',w:'Neutro.'},
+    {v:'4',t:'4 noches',s:0,ty:'bad',w:'El 4 se puede leer «shi», igual que 死 («muerte»). Es el número que más se evita.'},
+    {v:'7',t:'7 noches',s:2,ty:'ok',w:'El 7 es de buena suerte en Japón (los siete dioses de la fortuna, 七福神).'},
+    {v:'8',t:'8 noches',s:2,ty:'ok',w:'El 8 (八) se escribe ensanchándose hacia abajo y simboliza un futuro que se abre y prospera (末広がり, suehirogari).'}]},
+  hab:{lab:'Habitación asignada',opts:[
+    {v:'404',t:'Habitación 404',s:0,ty:'bad',w:'Doble 4. Muchos hoteles y hospitales japoneses no tienen habitaciones (ni plantas) con 4.'},
+    {v:'219',t:'Habitación 219',s:0,ty:'bad',w:'El 9 se puede leer «ku», como 苦 («sufrimiento»). También se evita, sobre todo en hospitales.'},
+    {v:'318',t:'Habitación 318',s:2,ty:'ok',w:'Sin 4 ni 9, y con un 8 de buena suerte.'},
+    {v:'517',t:'Habitación 517',s:2,ty:'ok',w:'Sin 4 ni 9, y con un 7 de buena suerte.'}]},
+  regalo:{lab:'Regalo de bienvenida',opts:[
+    {v:'tazas',t:'Juego de 4 tazas de cerámica',s:0,ty:'bad',w:'Regalar en grupos de cuatro se evita por la asociación del 4 con la muerte. Un juego de 5 o de 2 no tendría problema.'},
+    {v:'peine',t:'Peine de madera artesanal',s:0,ty:'bad',w:'Peine se dice «kushi», que suena como 苦 (ku, sufrimiento) + 死 (shi, muerte). Uno de los regalos clásicos que no se hacen.'},
+    {v:'yemas',t:'Caja de yemas de Ávila',s:2,ty:'ok',w:'Perfecto: en Japón los dulces típicos del lugar (お土産, omiyage) son el regalo por excelencia. Mejor si van bien envueltos.'},
+    {v:'flores',t:'Ramo de crisantemos blancos',s:0,ty:'bad',w:'Los crisantemos blancos son flores de funeral, en Japón y también en España.'}]},
+  planta:{lab:'El folleto en español dice: «El desayuno se sirve en la primera planta». ¿Cómo lo pones en el folleto japonés?',opts:[
+    {v:'1',t:'1階 (planta 1)',s:0,ty:'bad',w:'En Japón, 1階 es la planta a nivel de la calle: la que en España llamamos planta baja. Mandarías a los clientes a la recepción.'},
+    {v:'2',t:'2階 (planta 2)',s:2,ty:'ok',w:'Exacto: en Japón (como en EE. UU.) la planta baja ya es la 1, así que nuestra «primera planta» es su 2階. Y la recepción, en nuestra planta baja, estaría en 1階.'},
+    {v:'b1',t:'地下1階 (sótano 1)',s:0,ty:'bad',w:'地下 significa «subterráneo»: sería el primer sótano.'}]}
+};
+const JPKEYS=Object.keys(JP);
+function jpGet(k){const v=S.e5[k];return JP[k].opts.find(o=>o.v===v)||null;}
+(function buildJP(){
+  const box=$('#jpFields');
+  JPKEYS.forEach(k=>{
+    const w=el('div',{class:'field'});w.appendChild(el('span',{class:'lbl'},esc(JP[k].lab)));
+    const o=el('div',{class:'opts','data-k':k});
+    JP[k].opts.forEach(op=>{const b=el('button',{class:'opt','data-v':op.v},esc(op.t));b.addEventListener('click',()=>{S.e5[k]=op.v;S.e5.checked=false;save();render5();});o.appendChild(b);});
+    w.appendChild(o);box.appendChild(w);
+  });
+})();
+function render5(){
+  const st=S.e5;
+  JPKEYS.forEach(k=>document.querySelectorAll('[data-k="'+k+'"] .opt').forEach(b=>{b.setAttribute('aria-pressed',st[k]===b.dataset.v);b.classList.remove('right','wrong');if(st.checked&&st[k]===b.dataset.v){const op=jpGet(k);b.classList.add(op.s===2?'right':op.s===0?'wrong':'x');}}));
+  const c=jpGet('color');const p=$('#poster');p.style.background=c?c.bg:'var(--soft)';p.style.color=c?c.fg:'var(--ink)';
+  const n=jpGet('noches'),h=jpGet('hab'),r=jpGet('regalo'),pl=jpGet('planta');
+  $('#psNoches').textContent=n?n.t+' en Salamanca, León y Segovia':'¿Cuántas noches?';
+  $('#psHab').textContent=h?h.t:'¿Qué habitación?';
+  $('#psDes').innerHTML=pl?'朝食: <b>'+esc(pl.t.split(' ')[0])+'</b> (desayuno)':'Desayuno: ¿en qué planta?';
+  $('#psReg').textContent=r?'Regalo: '+r.t.charAt(0).toLowerCase()+r.t.slice(1):'¿Qué regalo?';
+  const f=$('#fb5');f.innerHTML='';$('#res5').textContent='';
+  if(st.checked){
+    JPKEYS.forEach(k=>{const op=jpGet(k);f.appendChild(fb(op.ty,'<b>'+esc(op.t)+'.</b> '+esc(op.w)));});
+    $('#res5').textContent=score5()+' / '+JPKEYS.length*2;
+    f.appendChild(fb('info','<b>Ojo con los tópicos.</b> Son convenciones extendidas, no leyes: mucha gente joven no les da importancia. En un encargo real, lo comprobarías con hablantes de japonés.'));
+  }
+}
+function score5(){return S.e5.checked?JPKEYS.reduce((a,k)=>a+(jpGet(k)?jpGet(k).s:0),0):0;}
+$('#check5').addEventListener('click',()=>{
+  const miss=JPKEYS.filter(k=>!jpGet(k)).length;
+  if(miss){warnIn($('#fb5'),'Te faltan '+miss+' decisiones.');return;}
+  S.e5.checked=true;save();render5();
+});
+
+// =====================================================
+// 6 · HOFSTEDE
+// =====================================================
+const DIMS=['Distancia al poder','Individualismo','Masculinidad','Aversión a la incert.','Largo plazo','Indulgencia'];
+const PROFILES=[
+  {id:'1',c:'EE. UU.',v:[40,91,62,46,26,68],why:'El individualismo más alto (91), poca orientación a largo plazo (26) y mucha indulgencia (68).'},
+  {id:'2',c:'China',v:[80,20,66,30,87,24],why:'Distancia al poder muy alta (80), muy colectivista (20), muy orientada al largo plazo (87) y poco indulgente (24).'},
+  {id:'3',c:'Brasil',v:[69,38,49,76,44,59],why:'Mucha aversión a la incertidumbre (76), distancia al poder alta (69) y bastante indulgencia (59).'},
+  {id:'4',c:'Alemania',v:[35,67,66,65,83,40],why:'Distancia al poder baja (35), bastante individualista (67) y muy orientada al largo plazo (83).'}
+];
+const COUNTRIES=['EE. UU.','China','Brasil','Alemania'];
+const FEATS=[
+  {t:'Teléfono gratuito, preguntas frecuentes muy visibles y sellos de garantía de calidad',ok:'Aversión a la incertidumbre'},
+  {t:'Foto y carta del presidente de la empresa en la portada',ok:'Distancia al poder'},
+  {t:'Foros de clientes, club de socios y símbolos de identidad nacional',ok:'Colectivismo'},
+  {t:'Configurador para personalizar tu producto y política de privacidad destacada',ok:'Individualismo'},
+  {t:'Premios, rankings y comparativas de rendimiento frente a la competencia',ok:'Masculinidad'}
+];
+const FOPTS=['Aversión a la incertidumbre','Distancia al poder','Colectivismo','Individualismo','Masculinidad'];
+function render6(){
+  const st=S.e6;
+  const pb=$('#profiles');pb.innerHTML='';
+  PROFILES.forEach(p=>{
+    const w=el('div',{class:'prof'});w.appendChild(el('b',null,'Perfil '+p.id));
+    p.v.forEach((v,i)=>w.appendChild(el('div',{class:'bar'},'<span>'+DIMS[i]+'</span><span class="track"><span class="fill" style="display:block;width:'+v+'%"></span></span><span class="v">'+v+'</span>')));
+    const sel=el('select',{'aria-label':'País del perfil '+p.id});
+    sel.innerHTML='<option value="">¿Qué país es?</option>'+COUNTRIES.map(c=>'<option'+(st.prof[p.id]===c?' selected':'')+'>'+c+'</option>').join('');
+    sel.addEventListener('change',()=>{st.prof[p.id]=sel.value;st.checked=false;save();render6();});
+    w.appendChild(sel);
+    if(st.checked)w.appendChild(fb(st.prof[p.id]===p.c?'ok':'bad','<b>Es '+p.c+(p.c.endsWith('.')?'':'.')+'</b> '+esc(p.why)));
+    pb.appendChild(w);
+  });
+  const fbx=$('#feats');fbx.innerHTML='';
+  FEATS.forEach((f,i)=>{
+    const w=el('div',{class:'q'});w.appendChild(el('div',null,esc(f.t)));
+    const sel=el('select',{'aria-label':'Dimensión'});
+    sel.innerHTML='<option value="">¿Qué dimensión?</option>'+FOPTS.map(o=>'<option'+(st.feat[i]===o?' selected':'')+'>'+o+'</option>').join('');
+    sel.addEventListener('change',()=>{st.feat[i]=sel.value;st.checked=false;save();render6();});
+    w.appendChild(sel);
+    if(st.checked)w.appendChild(fb(st.feat[i]===f.ok?'ok':'bad',st.feat[i]===f.ok?'<b>Bien.</b>':'<b>No.</b> Es '+esc(f.ok)+'.'));
+    fbx.appendChild(w);
+  });
+  const f=$('#fb6');f.innerHTML='';$('#res6').textContent='';
+  if(st.checked){$('#res6').textContent=score6()+' / '+(PROFILES.length+FEATS.length);f.appendChild(fb('info','<b>Recuerda:</b> son medias nacionales. Dan pistas sobre un público, pero no lo explican todo: se combinan con la situación del mercado y de la marca.'));}
+}
+function score6(){const st=S.e6;let s=0;PROFILES.forEach(p=>{if(st.prof[p.id]===p.c)s++;});FEATS.forEach((f,i)=>{if(st.feat[i]===f.ok)s++;});return s;}
+$('#check6').addEventListener('click',()=>{
+  const st=S.e6;const miss=PROFILES.filter(p=>!st.prof[p.id]).length+FEATS.filter((_,i)=>!st.feat[i]).length;
+  if(miss){warnIn($('#fb6'),'Te faltan '+miss+' respuestas (perfiles y webs).');return;}
+  st.checked=true;save();render6();
+});
+
+// =====================================================
+// 7 · CONTEXTO (IKEA)
+// =====================================================
+const HEADS=[
+  {t:'Cestas sostenibles hechas con mimo',c:'ES'},
+  {t:'Colección FREKVENS',c:'DE',o:'FREKVENS Kollektion'},
+  {t:'Duerme en una cama de flores',c:'ES'},
+  {t:'Colección MARKERAD: IKEA c/o Virgil Abloh',c:'DE',o:'MARKERAD Kollektion – IKEA c/o Virgil Abloh'},
+  {t:'Desde la cocina con amor',c:'ES'},
+  {t:'SYMFONISK: cuando el sonido de Sonos se une al diseño de IKEA',c:'DE',o:'SYMFONISK – Wenn der Sound von Sonos und das Design von IKEA aufeinandertreffen'},
+  {t:'Luz y delicadeza',c:'ES'},
+  {t:'Cuadros y pósteres',c:'DE',o:'Bilder- und Poster Motive'},
+  {t:'Objetos que te sacarán una sonrisa',c:'ES'},
+  {t:'Instalaciones solares y energía solar con IKEA',c:'DE',o:'Solaranlagen & Solarenergie mit IKEA'},
+  {t:'La diversión aún no ha terminado',c:'ES'}
+];
+const ORDER7=[0,3,7,2,5,8,1,10,4,9,6];
+function render7(){
+  const st=S.e7;const box=$('#heads');box.innerHTML='';
+  ORDER7.forEach(i=>{
+    const h=HEADS[i];const w=el('div',{class:'head'});
+    if(st.checked)w.classList.add(st.picks[i]===h.c?'right':'wrong');
+    let txt='«'+esc(h.t)+'»';
+    if(st.checked)txt+='<div class="small muted">'+(h.c==='ES'?'IKEA España':'IKEA Alemania · original: <i lang="de">'+esc(h.o)+'</i>')+'</div>';
+    w.appendChild(el('div',null,txt));
+    const seg=el('div',{class:'seg'});
+    [['ES','España'],['DE','Alemania']].forEach(([c,lab])=>{const b=el('button',{'aria-pressed':st.picks[i]===c},lab);b.addEventListener('click',()=>{st.picks[i]=c;st.checked=false;save();render7();});seg.appendChild(b);});
+    w.appendChild(seg);box.appendChild(w);
+  });
+  const f=$('#fb7');f.innerHTML='';$('#res7').textContent='';
+  if(st.checked){
+    $('#res7').textContent=score7()+' / '+HEADS.length;
+    f.appendChild(fb('ok','<b>La pauta.</b> Los titulares españoles hablan de sensaciones («con mimo», «con amor», «una sonrisa») y casi nunca nombran el producto: el contexto y la imagen hacen el resto. Los alemanes dicen qué es (colección, nombre, colaboración, función) y nada más. Es la distinción de Hall entre culturas de <b>alto contexto</b> (comunicación indirecta, afectiva, estética) y de <b>bajo contexto</b> (directa, explícita, informativa).'));
+    f.appendChild(fb('info','<b>Una pregunta para el taller de UX writing.</b> Si España es de alto contexto, ¿por qué en un mensaje de error o en un aviso quitamos «Le informamos de que…»? Piensa en la diferencia entre un titular que invita a soñar y un texto que tiene que ayudarte a hacer algo.'));
+  }
+}
+function score7(){return HEADS.filter((h,i)=>S.e7.picks[i]===h.c).length;}
+$('#check7').addEventListener('click',()=>{
+  const n=HEADS.filter((_,i)=>!S.e7.picks[i]).length;
+  if(n){warnIn($('#fb7'),'Te faltan '+n+' titulares.');return;}
+  S.e7.checked=true;save();render7();
+});
+
+// =====================================================
+// 8 · CÓDIGO
+// =====================================================
+const D8=new Date(2025,9,7,14,30);
+const RETOS=[
+  {id:'c1',title:'Reto 1 · La fecha en alemán',
+   intro:'Este código escribe la fecha del evento como la vería un usuario de EE. UU. Cámbialo para que salga como la vería un usuario de Alemania. Solo tienes que cambiar una cosa.',
+   code:"const fecha = new Date(2025, 9, 7, 14, 30); // los meses empiezan en 0: el 9 es octubre\nreturn new Intl.DateTimeFormat('en-US', {\n  dateStyle: 'full',\n  timeStyle: 'short'\n}).format(fecha);",
+   check:r=>['de-DE','de'].some(l=>r===new Intl.DateTimeFormat(l,{dateStyle:'full',timeStyle:'short'}).format(D8)),
+   ok:'Con cambiar el código de configuración regional, el navegador cambia el idioma, el orden, los puntos y el formato de 24 horas. Por eso en una web dinámica las fechas no se traducen: se configuran.',
+   hint:'Busca dónde pone \'en-US\' (inglés de EE. UU.). El de Alemania es \'de-DE\' (alemán de Alemania).'},
+  {id:'c2',title:'Reto 2 · El precio en Pet Shop',
+   intro:'El pienso para el perro de Lucía cuesta 44,90 euros, pero la tienda lo muestra en dólares y con formato estadounidense. Haz que salga como en España.',
+   code:"return new Intl.NumberFormat('en-US', {\n  style: 'currency',\n  currency: 'USD'\n}).format(44.9);",
+   check:r=>r===new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(44.9),
+   ok:'Hay dos cambios distintos: el formato (con es-ES, coma decimal y € detrás) y la divisa (EUR). Cambiar el idioma no cambia la moneda: eso es una decisión de negocio, no de traducción.',
+   hint:'Tienes que cambiar dos cosas: el locale (\'es-ES\') y la divisa (\'EUR\').'},
+  {id:'c3',title:'Reto 3 · Uno o varios',
+   intro:'La cesta dice «Tienes 1 ____ en la cesta». Sustituye las dos rayas (____) por la palabra correcta: en singular cuando hay 1 producto y en plural cuando hay más.',
+   code:"function cesta(n) {\n  if (n === 1) return 'Tienes 1 ____ en la cesta';\n  return 'Tienes ' + n + ' ____ en la cesta';\n}\nreturn cesta(1) + '  /  ' + cesta(3);",
+   check:r=>r==='Tienes 1 producto en la cesta  /  Tienes 3 productos en la cesta',
+   ok:'Por eso los archivos de traducción de WordPress tienen una forma para el singular y otra para el plural («%s comentario» / «%s comentarios»). El español tiene dos formas; otras lenguas, más: el árabe tiene seis, y el japonés, una sola.',
+   hint:'En la primera raya va «producto» y en la segunda, «productos». No borres las comillas.'},
+  {id:'c4',title:'Reto 4 · El calendario japonés',
+   intro:'Este código escribe la fecha del evento en japonés, con el calendario occidental. En Japón también se usa el calendario de las eras imperiales (en formularios oficiales, por ejemplo). Añade <code>-u-ca-japanese</code> al final de <code>\'ja-JP\'</code> (dentro de las comillas) y mira qué año aparece.',
+   code:"const fecha = new Date(2025, 9, 7);\nreturn new Intl.DateTimeFormat('ja-JP', {\n  dateStyle: 'long'\n}).format(fecha);",
+   check:r=>{try{return r===new Intl.DateTimeFormat('ja-JP-u-ca-japanese',{dateStyle:'long'}).format(new Date(2025,9,7));}catch(e){return false;}},
+   ok:'令和7年 significa «año 7 de la era Reiwa», que empezó en 2019 con el actual emperador. Un formulario japonés que pida la fecha de nacimiento puede pedirla así. «-u-ca-japanese» es una extensión del código de idioma que indica el calendario (ca) que hay que usar.',
+   hint:'Tiene que quedar exactamente así: \'ja-JP-u-ca-japanese\'.'}
+];
+function render8(){
+  const box=$('#retos');box.innerHTML='';
+  RETOS.forEach(r=>{
+    const st=S.e8[r.id]||(S.e8[r.id]={code:r.code,ok:false,tries:0});
+    const w=el('div',{class:'reto'});
+    const h=el('h3',null,esc(r.title)+(st.ok?' ✓':''));w.appendChild(h);
+    w.appendChild(el('p',null,r.intro));
+    const ta=el('textarea',{class:'code',rows:String(r.code.split('\n').length+1),spellcheck:'false','aria-label':'Código del '+r.title,autocapitalize:'off',autocomplete:'off'});
+    ta.value=st.code;ta.addEventListener('input',()=>{st.code=ta.value;save();});
+    w.appendChild(ta);
+    const acts=el('div',{class:'actions'});
+    const run=el('button',{class:'btn solid'},'Ejecutar');const rst=el('button',{class:'btn'},'Restaurar el código');const hint=el('button',{class:'btn'},'Pista');
+    acts.append(run,rst,hint);w.appendChild(acts);
+    const out=el('div',{class:'out','aria-live':'polite'},st.ok?'Resuelto.':'Pulsa «Ejecutar» para ver el resultado.');w.appendChild(out);
+    const fbx=el('div');w.appendChild(fbx);
+    run.addEventListener('click',()=>{
+      let res;fbx.innerHTML='';
+      try{res=new Function(ta.value)();out.textContent='Resultado: '+String(res);}
+      catch(e){out.textContent='Error: '+e.message+'\n(Revisa comillas, paréntesis y comas, o pulsa «Restaurar el código».)';return;}
+      st.tries++;let good=false;try{good=r.check(res);}catch(e){}
+      if(good){st.ok=true;fbx.appendChild(fb('ok','<b>Resuelto.</b> '+r.ok));}
+      else fbx.appendChild(fb('bad','<b>Todavía no.</b> '+(st.tries>=2?esc(r.hint):'Vuelve a leer el enunciado. Si te atascas, pulsa «Pista».')));
+      h.textContent=r.title+(st.ok?' ✓':'');save();
+    });
+    rst.addEventListener('click',()=>{ta.value=r.code;st.code=r.code;save();});
+    hint.addEventListener('click',()=>{fbx.innerHTML='';fbx.appendChild(fb('warn','<b>Pista.</b> '+esc(r.hint)));});
+    box.appendChild(w);
+  });
+}
+function score8(){return RETOS.filter(r=>S.e8[r.id]&&S.e8[r.id].ok).length*2;}
+
+// =====================================================
+// UX WRITING (taller)
+// =====================================================
+document.querySelectorAll('[data-reveal]').forEach(b=>b.addEventListener('click',()=>{
+  const a=document.getElementById(b.dataset.reveal);a.hidden=!a.hidden;
+  b.textContent=a.hidden?'Ver una propuesta':'Ocultar la propuesta';
+}));
+function count(e){
+  const out=document.querySelector('[data-count="'+e.id+'"]');if(!out)return;
+  const n=[...e.value].length;out.textContent=n+' caracteres';out.classList.toggle('over',n>+e.dataset.limit);
+}
+function phone(){
+  [['ux-s1','pv1','Tu botón',false],['ux-s2','pv2','Aquí, tu mensaje de error',true],['ux-s3','pv3','Aquí, tu confirmación',true]].forEach(([i,p,ph,em])=>{
+    const v=document.getElementById(i).value.trim();const e=document.getElementById(p);
+    e.innerHTML=v?esc(v):(em?'<span class="empty">'+ph+'</span>':ph);
+  });
+}
+document.querySelectorAll('[data-limit]').forEach(e=>{
+  e.value=S.ux[e.id]||'';
+  e.addEventListener('input',()=>{count(e);S.ux[e.id]=e.value;save();phone();});
+  count(e);
+});
+phone();
+const filler=["estimado cliente","le informamos de que","le informamos que","con el fin de","en todo momento","debido al?","durante las fechas actuales","es posible que se produzca","la realización de","en este sentido","con posterioridad al?","asimismo","le recordamos que","proceder a","disculpe las molestias","por favor","poder garantizar","elevado volumen","realizados?","día "];
+const reF=new RegExp('('+filler.join('|')+')','gi');
+const words=s=>(s.trim().match(/\S+/g)||[]).length;
+const orig=$('#orig'),origText=orig.textContent;
+$('#origCount').textContent=words(origText)+' palabras';
+const mb=$('#markOrig');
+mb.addEventListener('click',()=>{
+  const on=mb.getAttribute('aria-pressed')!=='true';
+  mb.setAttribute('aria-pressed',on);mb.textContent=on?'Quitar las marcas':'Marcar relleno';
+  orig.innerHTML=on?esc(origText).replace(reF,'<span class="hl">$1</span>'):esc(origText);
+});
+const simp=$('#ux-simp'),sc=$('#simpCount'),sp=$('#simpPreview');
+function simpUpdate(){
+  const n=words(simp.value);sc.textContent=n+' palabras';sc.classList.toggle('over',n>30);
+  sp.innerHTML=simp.value.trim()?esc(simp.value).replace(reF,'<span class="hl">$1</span>'):'<span class="empty">Escribe tu versión y aparecerá aquí, con el relleno marcado.</span>';
+}
+simp.value=S.ux['ux-simp']||'';
+simp.addEventListener('input',()=>{S.ux['ux-simp']=simp.value;simpUpdate();save();});simpUpdate();
+document.querySelectorAll('.checks input').forEach(c=>{
+  c.checked=!!S.ux[c.id];
+  c.addEventListener('change',()=>{S.ux[c.id]=c.checked;save();});
+});
+const UXF=[...document.querySelectorAll('[data-ux]')].map(e=>({id:e.id,lab:e.dataset.ux}));
+UXF.push({id:'ux-simp',lab:'Aviso recortado'});
+function uxDone(ids){return ids.every(id=>(S.ux[id]||'').trim());}
+
+// =====================================================
+// PUNTUACIÓN, RESUMEN Y DESCARGA
+// =====================================================
+function score1(){const es=S.e1['es-ES'];const others=Object.keys(S.e1).filter(k=>k!=='es-ES'&&S.e1[k].checked).map(k=>S.e1[k].score);return (es&&es.checked?es.score:0)+(others.length?Math.max(...others):0);}
+const PARTS=[
+  {id:'p1',n:'1 · Formatos (España + mejor otro país)',max:ITEMS.length*2,w:16,f:score1,done:()=>!!(S.e1['es-ES']&&S.e1['es-ES'].checked)&&Object.keys(S.e1).some(k=>k!=='es-ES'&&S.e1[k].checked)},
+  {id:'p2',n:'2 · Nombres y formularios',max:7,w:12,f:()=>S.e2.checked?score2():0,done:()=>S.e2.checked},
+  {id:'p3',n:'3 · Variedad y registro',max:TRATO.length,w:10,f:()=>S.e3.checked?score3():0,done:()=>S.e3.checked},
+  {id:'p4',n:'4 · Imágenes y gestos',max:CASES.filter(c=>!c.debate).length,w:10,f:()=>S.e4.checked?score4():0,done:()=>S.e4.checked},
+  {id:'p5',n:'5 · Japón',max:JPKEYS.length*2,w:12,f:score5,done:()=>S.e5.checked},
+  {id:'p6',n:'6 · Hofstede',max:PROFILES.length+FEATS.length,w:12,f:()=>S.e6.checked?score6():0,done:()=>S.e6.checked},
+  {id:'p7',n:'7 · Contexto alto y bajo',max:HEADS.length,w:12,f:()=>S.e7.checked?score7():0,done:()=>S.e7.checked},
+  {id:'p8',n:'8 · Código',max:RETOS.length*2,w:16,f:score8,done:()=>RETOS.every(r=>S.e8[r.id]&&S.e8[r.id].ok)}
+];
+// Cada ejercicio vale w puntos (suman 100); los aciertos se convierten a esa escala.
+const MAX=PARTS.reduce((a,p)=>a+p.w,0);
+function pts(p){return Math.round(p.f()/p.max*p.w);}
+function total(){return PARTS.reduce((a,p)=>a+pts(p),0);}
+function updateScore(){
+  $('#score').textContent=total()+' / '+MAX+' puntos';
+  PARTS.forEach(p=>{const t=document.getElementById('tab-'+p.id);if(t)t.classList.toggle('done',p.done());});
+  const t1=document.getElementById('tab-u1');if(t1)t1.classList.toggle('done',uxDone(['ux-r1','ux-r2','ux-r3','ux-r4','ux-r4b','ux-r5','ux-r5b']));
+  const t2=document.getElementById('tab-u2');if(t2)t2.classList.toggle('done',uxDone(['ux-simp','ux-s1','ux-s2','ux-s3']));
+}
+function renderSummary(){
+  const s=$('#summary');s.innerHTML='';
+  s.appendChild(el('div',{class:'lbl'},'Aspectos culturales'));
+  PARTS.forEach(p=>s.appendChild(el('div',{class:'sumrow'},'<span>'+esc(p.n)+(p.done()?' ✓':'')+'</span><span>'+pts(p)+' / '+p.w+'</span>')));
+  s.appendChild(el('div',{class:'sumrow',style:'font-weight:700'},'<span>Total</span><span>'+total()+' / '+MAX+'</span>'));
+  const filled=UXF.filter(f=>(S.ux[f.id]||'').trim()).length;
+  s.appendChild(el('div',{class:'lbl',style:'margin-top:.8rem'},'UX writing y microcopy'));
+  s.appendChild(el('div',{class:'sumrow',style:'border-bottom:0'},'<span>Sin puntuación</span><span>'+filled+' / '+UXF.length+' textos escritos</span>'));
+  const pend=PARTS.filter(p=>!p.done()).map(p=>p.n.split(' · ')[0]);
+  $('#dlNote').textContent=(S.nombre?'':'Escribe tu nombre en «Inicio» antes de descargar. ')+(pend.length?'Ejercicios culturales por terminar: '+pend.join(', ')+'.':'¡Has terminado todos los ejercicios culturales!');
+}
+function report(){
+  const mk=(good)=>good===true?'<span class="ok">✓</span>':good===false?'<span class="no">✗</span>':'';
+  const ans=v=>v==null||v===''?'<i class="m">sin responder</i>':esc(v);
+  const refl=k=>'<p class="refl"><b>Reflexión:</b> '+ans(S.refl[k])+'</p>';
+  let h='';
+  h+='<h2>1 · Formatos</h2>';
+  Object.keys(S.e1).forEach(k=>{const st=S.e1[k];if(!Object.keys(st.a).length)return;h+='<h3>'+LOC[k]+(st.checked?' · '+st.score+'/'+ITEMS.length+' aciertos':' · sin comprobar')+'</h3><ul>';ITEMS.forEach(it=>{const v=st.a[it.k];h+='<li>'+esc(it.lab)+': '+ans(v&&v.length?v.map(i=>it.opts[i]).join(' / '):null)+' '+(st.checked?mk(sameSet(v,it.ok[k])):'')+'</li>';});h+='</ul>';});
+  h+=refl('r1');
+  h+='<h2>2 · Nombres y formularios</h2><ul>';
+  PEOPLE.forEach((p,i)=>{const v=S.e2.a[i];h+='<li>'+esc(p.nm)+' — '+esc(p.q)+' '+ans(v==null?null:p.opts[v])+' '+(S.e2.checked?mk(v===p.ok):'')+'</li>';});
+  h+='<li>Katakana: '+ans(S.e2.a.k==null?null:KATA.opts[S.e2.a.k])+' '+(S.e2.checked?mk(S.e2.a.k===KATA.ok):'')+'</li>';
+  h+='<li>Formulario para España: '+ans(S.e2.es==null?null:FES[S.e2.es].t)+' '+(S.e2.checked?mk(S.e2.es===OK_ES):'')+'</li>';
+  h+='<li>Formulario para Japón: '+ans(S.e2.jp==null?null:FJP[S.e2.jp].t)+' '+(S.e2.checked?mk(S.e2.jp===OK_JP):'')+'</li></ul>'+refl('r2');
+  h+='<h2>3 · Variedad y registro</h2><ul>';
+  TRATO.forEach((t,i)=>{const v=S.e3.a[i];h+='<li>'+t.ctx.replace(/<[^>]+>/g,'')+': '+ans(v==null?null:t.opts[v])+' '+(S.e3.checked?mk(t.ok.includes(v)):'')+'</li>';});
+  h+='</ul>';
+  h+='<h2>4 · Imágenes y gestos</h2><ul>';
+  CASES.forEach((c,i)=>{const v=S.e4.a[i];h+='<li>'+esc(c.mk)+' — '+esc(c.d)+' <b>'+ans(v==null?null:ACTS[v])+'</b> '+(S.e4.checked&&!c.debate?mk(c.ok.includes(v)):'')+'</li>';});
+  h+='</ul>'+refl('r4');
+  h+='<h2>5 · Japón</h2><ul>';
+  JPKEYS.forEach(k=>{const op=jpGet(k);h+='<li>'+esc(k==='planta'?'Planta del desayuno':JP[k].lab)+': '+ans(op?op.t:null)+' '+(S.e5.checked&&op?mk(op.s===2?true:op.s===0?false:null):'')+'</li>';});
+  h+='</ul>'+refl('r5');
+  h+='<h2>6 · Hofstede</h2><ul>';
+  PROFILES.forEach(p=>{h+='<li>Perfil '+p.id+': '+ans(S.e6.prof[p.id])+' '+(S.e6.checked?mk(S.e6.prof[p.id]===p.c):'')+'</li>';});
+  FEATS.forEach((f,i)=>{h+='<li>'+esc(f.t)+': '+ans(S.e6.feat[i])+' '+(S.e6.checked?mk(S.e6.feat[i]===f.ok):'')+'</li>';});
+  h+='</ul>';
+  h+='<h2>7 · Contexto alto y bajo</h2><ul>';
+  HEADS.forEach((x,i)=>{h+='<li>«'+esc(x.t)+'»: '+ans(S.e7.picks[i]==='ES'?'España':S.e7.picks[i]==='DE'?'Alemania':null)+' '+(S.e7.checked?mk(S.e7.picks[i]===x.c):'')+'</li>';});
+  h+='</ul><p class="refl"><b>FREKVENS para España:</b> '+ans(S.refl.r7a)+'</p><p class="refl"><b>Cocina para Alemania:</b> '+ans(S.refl.r7b)+'</p>';
+  h+='<h2>8 · Código</h2><ul>';
+  RETOS.forEach(r=>{const st=S.e8[r.id];h+='<li>'+esc(r.title)+': '+(st&&st.ok?'resuelto '+mk(true):'sin resolver')+(st&&st.code!==r.code?'<pre>'+esc(st.code)+'</pre>':'')+'</li>';});
+  h+='</ul>';
+  h+='<h2>UX writing y microcopy (sin puntuación)</h2><ul>';
+  UXF.forEach(f=>{h+='<li><b>'+esc(f.lab)+':</b> '+ans(S.ux[f.id])+'</li>';});
+  h+='</ul>';
+  const name=S.nombre||'(sin nombre)';
+  return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Respuestas · '+esc(name)+'</title><style>body{font:16px/1.55 system-ui,sans-serif;color:#1E2433;background:#F5F7FC;margin:0;padding:24px}main{max-width:52rem;margin:0 auto;background:#fff;border:1px solid #DCE1EC;border-radius:12px;padding:24px 28px}h1{margin:0 0 .3rem;font-size:1.6rem}h2{margin:1.6rem 0 .4rem;font-size:1.2rem;color:#3F5FE0;border-bottom:1px solid #DCE1EC;padding-bottom:.2rem}h3{margin:.8rem 0 .2rem;font-size:1rem}ul{margin:.3rem 0;padding-left:1.2rem}li{margin:.2rem 0}.ok{color:#1F7A4D;font-weight:700}.no{color:#B4372B;font-weight:700}.m{color:#5B6478}.refl{background:#EEF2FB;border-radius:8px;padding:.5rem .8rem;margin:.4rem 0}.head{display:flex;gap:1.5rem;flex-wrap:wrap;color:#5B6478}.score{font-size:1.3rem;font-weight:800;color:#1E2433}pre{background:#F1F4FB;padding:.5rem;border-radius:6px;white-space:pre-wrap}@media print{body{background:#fff;padding:0}main{border:0}}</style></head><body><main><h1>Laboratorio de localización · Respuestas</h1><div class="head"><span><b>Nombre:</b> '+esc(name)+'</span><span><b>Fecha:</b> '+esc(new Date().toLocaleString('es-ES'))+'</span></div><p class="score">Aspectos culturales: '+total()+' / '+MAX+' puntos</p>'+h+'</main></body></html>';
+}
+$('#dl').addEventListener('click',()=>{
+  const name=(S.nombre||'alumno').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w]+/g,'-').replace(/^-|-$/g,'').toLowerCase()||'alumno';
+  const blob=new Blob([report()],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='respuestas-localizacion-'+name+'.html';document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+});
+$('#reset').addEventListener('click',()=>{
+  if(!confirm('¿Borrar todas tus respuestas de este navegador? No se puede deshacer.'))return;
+  try{localStorage.removeItem(KEY);}catch(e){}location.reload();
+});
+
+// ---------------- Arranque ----------------
+render1();render2();render3();render4();render5();render6();render7();render8();
+const h0=location.hash.replace('#','');
+show(panels.some(p=>p.id===h0)?h0:(S.tab||'p0'));
+})();
+</script>
+</body>
+</html>
